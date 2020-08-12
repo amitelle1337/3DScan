@@ -7,4 +7,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="Intel.RealSense">
+      <HintPath>C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64\Intel.Realsense.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
