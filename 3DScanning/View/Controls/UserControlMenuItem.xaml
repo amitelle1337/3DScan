@@ -12,8 +12,7 @@
             <ListView x:Name="ListViewMenu" ItemsSource="{Binding Path=SubItems}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,0" Foreground="#F7F4EA">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <!--<TextBlock Text="{Binding Path=Name}" Padding="25 5" />-->
-                        <Button Padding="25 5">{Binding Path=Name}</Button>
+                        <TextBlock Text="{Binding Path=Name}" Padding="25 5" />
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
