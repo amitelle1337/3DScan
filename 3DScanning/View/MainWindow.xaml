@@ -21,12 +21,16 @@
 
         <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="#3891A6"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" FontSize="14" Foreground="#3891A6">3DScanning</TextBlock>
+        <Viewbox Stretch="Uniform" Grid.Row="1" Grid.Column="0" Margin="5 5">
+            <TextBlock Text="3DScanning" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#3891A6"/>
+        </Viewbox>
 
         <Grid Grid.Column="0" Grid.Row="2" Background="#3891A6">
             <ScrollViewer HorizontalAlignment="Right" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Row="1">
                 <StackPanel x:Name="Menu" Margin="10"/>
             </ScrollViewer>
         </Grid>
+
+        <Frame x:Name="MainFrame" Grid.Column="1" Grid.Row="2" Source="LoadConfigView.xaml"/>
     </Grid>
 </Window>

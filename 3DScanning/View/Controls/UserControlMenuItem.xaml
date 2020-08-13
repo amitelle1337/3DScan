@@ -7,12 +7,13 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d" >
     <Grid>
-        <ListBoxItem x:Name="ListViewItemMenu" Content="{Binding Path=Header}" Padding="37 14" FontSize="14" Foreground="#F7F4EA" Margin="0,0,0,0"/>
-        <Expander x:Name="ExpanderMenu" Header="{Binding Path=Header}" IsExpanded="False" Width="220" HorizontalAlignment="Right" Background="{x:Null}" Foreground="#F7F4EA">
-            <ListView x:Name="ListViewMenu" ItemsSource="{Binding Path=SubItems}" Foreground="#F7F4EA" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,0">
+        <ListBoxItem x:Name="ListViewItemMenu" Content="{Binding Path=Header}" Padding="25 14" FontSize="15" HorizontalAlignment="Left" Margin="0,0,0,0" Foreground="#DEE7E1"/>
+        <Expander x:Name="ExpanderMenu" Header="{Binding Path=Header}" IsExpanded="False" Width="220" HorizontalAlignment="Left" Background="{x:Null}" Foreground="#F7F4EA">
+            <ListView x:Name="ListViewMenu" ItemsSource="{Binding Path=SubItems}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,0" Foreground="#F7F4EA">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Path=Name}" Padding="20 5"/>
+                        <!--<TextBlock Text="{Binding Path=Name}" Padding="25 5" />-->
+                        <Button Padding="25 5">{Binding Path=Name}</Button>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
