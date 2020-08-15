@@ -15,26 +15,38 @@ namespace _3DScanning.Model
 
     public class Camera
     {
-        public string Serial { get; set; }
+        private string _serial;
+
+        public string Serial
+        {
+            get => _serial;
+            set
+            {
+                _serial = value;
+                Type = GetCameraType(_serial);
+            }
+        }
+
         public float Distance { get; set; }
         public float Angle { get; set; }
-        public CameraType Type { get; }
-        public float Dx { get; set; }
-        public float Dy { get; set; }
-        public float Dz { get; set; }
-        [JsonIgnore] public IList<ProcessingBlock> Filters { get; set; }
+        [JsonIgnore] public CameraType Type { get; private set; }
+        [JsonConverter(typeof(Vector3Converter))] public Vector3 Delta { get; set; }
+
+        public List<ProcessingBlock> Filters { get; set; }
         public bool On { get; set; }
 
-        public Camera(string serial, float distance = 0, float angle = 0, float dx = 0, float dy = 0, float dz = 0,
-            bool on = true)
+        // Without default constructor json won't work
+        private Camera()
+        {
+        }
+
+        public Camera(string serial, float distance = default, float angle = default, Vector3 delta = default, bool on = true)
         {
             Serial = serial;
             Type = GetCameraType(Serial);
             Distance = distance;
             Angle = angle;
-            Dx = dx;
-            Dy = dy;
-            Dz = dz;
+            Delta = delta;
             Filters = new List<ProcessingBlock>();
             On = on;
         }
@@ -84,7 +96,7 @@ namespace _3DScanning.Model
             {
                 for (var i = 0; i < dummyFramesNumber; ++i)
                 {
-                    using (var frameset = pipe.WaitForFrames()) ;
+                    using (pipe.WaitForFrames()) ;
                 }
 
                 var framesArr = new DepthFrame[framesNumber];
@@ -211,7 +223,7 @@ namespace _3DScanning.Model
         public void AdjustAndRotateInPlace(List<Vector3> vertices)
         {
             Utils.ChangeCoordinatesInPlace(vertices,
-                v => new Vector3(-(v.X + Dx), -(v.Y + Dy), Distance - (v.Z + Dz)));
+                v => new Vector3(-(v.X + Delta.X), -(v.Y + Delta.Y), Distance - (v.Z + Delta.Z)));
 
             Utils.RotatePointCloudInPlace(vertices, Angle);
         }

@@ -55,7 +55,7 @@ namespace _3DScanning.Model
         }
 
 
-        public static void WriteXYZ(string filename, IEnumerable<Vector3> vertices)
+        public static void WriteXyz(string filename, IEnumerable<Vector3> vertices)
         {
             using var writer = new StreamWriter(filename);
             foreach (var v in vertices)
@@ -73,8 +73,22 @@ namespace _3DScanning.Model
                 frame.DisposeWith(releaser);
             }
         }
-    }
 
+        public static Vector3 AveragePointCloud(IEnumerable<Vector3> vertices)
+        {
+            var count = 0;
+            Vector3 acum = Vector3.Zero;
+
+            // Myabe using .Average on each dimenstion is faster (Myabe even in parallel :O)
+            foreach (var v in vertices)
+            {
+                acum += v;
+                ++count;
+            }
+
+            return acum / count;
+        }
+    }
 
     public static class NumericExtensions
     {
