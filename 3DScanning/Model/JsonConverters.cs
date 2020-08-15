@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace _3DScanning.Model
+namespace _3DScanning
 {
     public class Vector3Converter : JsonConverter<Vector3>
     {
@@ -15,10 +15,10 @@ namespace _3DScanning.Model
             _ = reader.Read(); // Read start object
             for (var i = 0; i < arr.Length; ++i)
             {
-                Console.WriteLine(reader.GetString()); // Reader propery name
-                Console.WriteLine(reader.Read()); // Reader ':'
-                arr[i] = reader.GetSingle();
-                Console.WriteLine(reader.Read()); // Read the ',' and at last read the end object
+                _ = reader.GetString(); // Read propery name, add checks [?]
+                _ = reader.Read(); // Read ':'
+                arr[i] = reader.GetSingle(); // Read value
+                _ = reader.Read(); // Read the ',' and at last read the end object
             }
             return new Vector3(arr[0], arr[1], arr[2]);
         }
@@ -37,33 +37,68 @@ namespace _3DScanning.Model
     {
         public override ProcessingBlock Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var name = reader.GetString();
             ProcessingBlock block = default;
+            _ = reader.Read(); // Read start object
+            _ = reader.GetString(); // Read "Name", add checks [?]
+            _ = reader.Read(); // Read the ':'
+            var name = reader.GetString(); // Read the name
             switch (name)
             {
-                case "Decimation filter":
+                case "Decimation Filter":
                     block = new DecimationFilter();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterMagnitude", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterMagnitude].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read end object
                     break;
                 case "Spatial Filter":
-                    block = new DecimationFilter();
+                    block = new SpatialFilter();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterMagnitude", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterMagnitude].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterSmoothAlpha", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothAlpha].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterSmoothDelta", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothDelta].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read end object
                     break;
-                case "Temporal filter":
+                case "Temporal Filter":
                     block = new TemporalFilter();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterSmoothAlpha", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothAlpha].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "FilterSmoothDelta", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothDelta].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read end object
                     break;
                 case "Hole Filling Filter":
                     block = new HoleFillingFilter();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "HolesFill", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.HolesFill].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read end object
                     break;
                 case "Threshold Filter":
                     block = new ThresholdFilter();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "MinDistance", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.MinDistance].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read the ','
+                    _ = reader.GetString(); // Read "MaxDistance", add checks [?]
+                    _ = reader.Read(); // Read the ':'
                     block.Options[Option.MaxDistance].Value = reader.GetSingle();
+                    _ = reader.Read(); // Read end object
                     break;
                 default:
                     throw new NotSupportedException($"The filter {name} is not supported in this converter");
@@ -76,7 +111,7 @@ namespace _3DScanning.Model
             var name = block.Info[CameraInfo.Name];
             switch (name)
             {
-                case "Decimation filter":
+                case "Decimation Filter":
                     writer.WriteStartObject();
                     writer.WriteString("Name", name);
                     writer.WriteNumber("FilterMagnitude", block.Options[Option.FilterMagnitude].Value);
@@ -90,7 +125,7 @@ namespace _3DScanning.Model
                     writer.WriteNumber("FilterSmoothDelta", block.Options[Option.FilterSmoothDelta].Value);
                     writer.WriteEndObject();
                     break;
-                case "Temporal filter":
+                case "Temporal Filter":
                     writer.WriteStartObject();
                     writer.WriteString("Name", name);
                     writer.WriteNumber("FilterSmoothAlpha", block.Options[Option.FilterSmoothAlpha].Value);
