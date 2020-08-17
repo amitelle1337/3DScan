@@ -144,7 +144,7 @@ namespace _3DScanning.Model
                 var pointcloud = Utils.FrameToPointCloud(frame);
                 frame.Dispose();
                 var dev = Utils.Average(pointcloud);
-                cam.PositionDeviation = new Vector3(-dev.X, -dev.Y, dev.Z);
+                cam.PositionDeviation = new Vector3(-dev.X, -dev.Y, CalibraitionSurface.Z + dev.Z);
             }
         }
 

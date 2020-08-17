@@ -14,13 +14,13 @@ namespace _3DScanning.ViewModel
 
         public ScanManagerVM()
         {
-            /*
-            using (StreamReader r = new StreamReader("defaultJson.json"))
+            
+            using (StreamReader r = new StreamReader("config.json"))
             {
                 var jsonString = r.ReadToEnd();
                 Model = JsonSerializer.Deserialize<ScanManager>(jsonString);
             }
-            */
+            
 
         }
 

@@ -40,7 +40,7 @@
                 <RadioButton GroupName="filetype" Grid.Column="3" Background="#698F3F"
                              Style="{DynamicResource MaterialDesignAccentRadioButton}" >.obj</RadioButton>
             </Grid>
-            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#698F3F" BorderBrush="#698F3F"
+            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#698F3F" BorderBrush="#698F3F" Click="Calibrate_Click"
                     Margin="10" Width="150" VerticalAlignment="Top" Grid.Row="2">calibrate</Button>
         </Grid>
     </Grid>

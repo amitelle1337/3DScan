@@ -36,6 +36,13 @@ namespace _3DScanning.View.Controls
         private void Capture_Click(object sender, RoutedEventArgs e)
         {
             var scanner = (ScanManagerVM)Application.Current.Properties["ScanManagerVM"];
+            scanner.Capture();
+        }
+
+        private void Calibrate_Click(object sender, RoutedEventArgs e)
+        {
+            var scanner = (ScanManagerVM)Application.Current.Properties["ScanManagerVM"];
+            scanner.Calibrate();
         }
     }
 }
