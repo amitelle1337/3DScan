@@ -10,22 +10,20 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.IO;
 using Microsoft.Win32;
+using System.IO;
 
-
-namespace _3DScanning.View
+namespace _3DScanning.View.Controls
 {
     /// <summary>
-    /// Interaction logic for SaveConfigView.xaml
+    /// Interaction logic for SaveConfigControl.xaml
     /// </summary>
-    public partial class SaveConfigView : Page
+    public partial class SaveConfigControl : UserControl
     {
-        public SaveConfigView()
+        public SaveConfigControl()
         {
             InitializeComponent();
         }
-
         private void btnSaveFile_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();

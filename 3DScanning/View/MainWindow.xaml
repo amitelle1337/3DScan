@@ -31,6 +31,8 @@
             </ScrollViewer>
         </Grid>
 
-        <Frame x:Name="MainFrame" Grid.Column="1" Grid.Row="2" Source="LoadConfigView.xaml"/>
+        <StackPanel x:Name="MainPage" Grid.Column="1" Grid.Row="2"/>
+
+        <!--<Frame x:Name="MainFrame" Grid.Column="1" Grid.Row="2" Source="EditConfigView.xaml"/>-->
     </Grid>
 </Window>

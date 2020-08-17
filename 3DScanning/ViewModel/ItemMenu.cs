@@ -15,6 +15,7 @@ namespace _3DScanning.ViewModel
             Header = header;
             SubItems = subItems;
             Icon = icon;
+            Screen = null;
         }
 
         public ItemMenu(string header, UserControl screen, PackIconKind icon)

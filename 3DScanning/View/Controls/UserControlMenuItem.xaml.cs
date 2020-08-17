@@ -19,14 +19,30 @@ namespace _3DScanning.View.Controls
     /// </summary>
     public partial class UserControlMenuItem : UserControl
     {
-        public UserControlMenuItem(ItemMenu itemMenu)
+        MainWindow context;
+        public UserControlMenuItem(ItemMenu itemMenu, MainWindow ctx)
         {
             InitializeComponent();
-
+            
             ExpanderMenu.Visibility = itemMenu.SubItems == null ? Visibility.Collapsed : Visibility.Visible;
             ListViewItemMenu.Visibility = itemMenu.SubItems == null ? Visibility.Visible : Visibility.Collapsed;
-
+            
+            this.context = ctx;
             this.DataContext = itemMenu;
+        }
+
+        private void ListViewMenu_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var v = (ListView)sender;
+            var selection = (SubItem)v.SelectedItem;
+            this.context.SwitchPage(selection.Screen);
+        }
+
+        private void ListViewItemMenu_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var v = (ListBoxItem)sender;
+            var name = v.Content.ToString();
+            this.context.SwitchPage(name);
         }
     }
 }

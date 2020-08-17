@@ -1,5 +1,6 @@
-﻿using System;
+﻿using Microsoft.Win32;
 using System.IO;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -11,17 +12,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Microsoft.Win32;
 
-
-namespace _3DScanning.View
+namespace _3DScanning.View.Controls
 {
     /// <summary>
-    /// Interaction logic for LoadConfigView.xaml
+    /// Interaction logic for LoadConfigControl.xaml
     /// </summary>
-    public partial class LoadConfigView : Page
+    public partial class LoadConfigControl : UserControl
     {
-        public LoadConfigView()
+        public LoadConfigControl()
         {
             InitializeComponent();
         }

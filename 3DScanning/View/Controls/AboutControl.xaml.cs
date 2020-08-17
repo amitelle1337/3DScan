@@ -11,14 +11,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace _3DScanning.View
+namespace _3DScanning.View.Controls
 {
     /// <summary>
-    /// Interaction logic for CamerasView.xaml
+    /// Interaction logic for AboutControl.xaml
     /// </summary>
-    public partial class CamerasView : Page
+    public partial class AboutControl : UserControl
     {
-        public CamerasView()
+        public AboutControl()
         {
             InitializeComponent();
         }
