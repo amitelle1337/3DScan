@@ -154,7 +154,7 @@ namespace _3DScanning.Model
         /// </summary>
         /// <param name="vertices">The point-cloud to save.</param>
         /// <param name="fileExtension">The extension of the file (The file's format).</param>
-        public void SavePointCloud(IEnumerable<Vector3> vertices, string fileExtension)
+        public void SavePointCloud(IEnumerable<Vector3> vertices, string fileExtension = "xyz")
         {
             switch (fileExtension)
             {
