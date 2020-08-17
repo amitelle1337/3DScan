@@ -1,21 +1,26 @@
 ﻿using Intel.RealSense;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace _3DScanning.Model
 {
+    /// <inheritdoc/>
     public class Vector3Converter : JsonConverter<Vector3>
     {
+        /// <inheritdoc/>
         public override Vector3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var arr = new float[3];
 
+            //Note: Maybe we should add checks for each read.
+
             _ = reader.Read(); // Read start object
             for (var i = 0; i < arr.Length; ++i)
             {
-                _ = reader.GetString(); // Read propery name, add checks [?]
+                _ = reader.GetString(); // Read property name
                 _ = reader.Read(); // Read ':'
                 arr[i] = reader.GetSingle(); // Read value
                 _ = reader.Read(); // Read the ',' and at last read the end object
@@ -23,6 +28,7 @@ namespace _3DScanning.Model
             return new Vector3(arr[0], arr[1], arr[2]);
         }
 
+        /// <inheritdoc/>
         public override void Write(Utf8JsonWriter writer, Vector3 vec, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
@@ -33,21 +39,36 @@ namespace _3DScanning.Model
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Can only convert the native processing blocks from the Intel.RealSense library.
+    /// <list type="bullet">
+    /// <listheader><term>Supported Processing Blocks</term></listheader>
+    /// <item><term>Decimation Filter</term></item>
+    /// <item><term>Spatial Filter</term></item>
+    /// <item><term>Temporal Filter</term></item>
+    /// <item><term>Hole Filling Filter</term></item>
+    /// <item> <term>Threshold Filter</term></item>
+    /// </list>
+    /// </remarks>
     public class ProcessingBlockConverter : JsonConverter<ProcessingBlock>
     {
+        /// <inheritdoc/>
         public override ProcessingBlock Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ProcessingBlock block = default;
+            //Note: Maybe we should add checks for each read.
+
             _ = reader.Read(); // Read start object
-            _ = reader.GetString(); // Read "Name", add checks [?]
+            _ = reader.GetString(); // Read "Name"
             _ = reader.Read(); // Read the ':'
             var name = reader.GetString(); // Read the name
+            ProcessingBlock block;
             switch (name)
             {
                 case "Decimation Filter":
                     block = new DecimationFilter();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterMagnitude", add checks [?]
+                    _ = reader.GetString(); // Read "FilterMagnitude"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterMagnitude].Value = reader.GetSingle();
                     _ = reader.Read(); // Read end object
@@ -55,15 +76,15 @@ namespace _3DScanning.Model
                 case "Spatial Filter":
                     block = new SpatialFilter();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterMagnitude", add checks [?]
+                    _ = reader.GetString(); // Read "FilterMagnitude"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterMagnitude].Value = reader.GetSingle();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterSmoothAlpha", add checks [?]
+                    _ = reader.GetString(); // Read "FilterSmoothAlpha"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothAlpha].Value = reader.GetSingle();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterSmoothDelta", add checks [?]
+                    _ = reader.GetString(); // Read "FilterSmoothDelta"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothDelta].Value = reader.GetSingle();
                     _ = reader.Read(); // Read end object
@@ -71,11 +92,11 @@ namespace _3DScanning.Model
                 case "Temporal Filter":
                     block = new TemporalFilter();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterSmoothAlpha", add checks [?]
+                    _ = reader.GetString(); // Read "FilterSmoothAlpha"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothAlpha].Value = reader.GetSingle();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "FilterSmoothDelta", add checks [?]
+                    _ = reader.GetString(); // Read "FilterSmoothDelta"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.FilterSmoothDelta].Value = reader.GetSingle();
                     _ = reader.Read(); // Read end object
@@ -83,7 +104,7 @@ namespace _3DScanning.Model
                 case "Hole Filling Filter":
                     block = new HoleFillingFilter();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "HolesFill", add checks [?]
+                    _ = reader.GetString(); // Read "HolesFill"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.HolesFill].Value = reader.GetSingle();
                     _ = reader.Read(); // Read end object
@@ -91,11 +112,11 @@ namespace _3DScanning.Model
                 case "Threshold Filter":
                     block = new ThresholdFilter();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "MinDistance", add checks [?]
+                    _ = reader.GetString(); // Read "MinDistance"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.MinDistance].Value = reader.GetSingle();
                     _ = reader.Read(); // Read the ','
-                    _ = reader.GetString(); // Read "MaxDistance", add checks [?]
+                    _ = reader.GetString(); // Read "MaxDistance"
                     _ = reader.Read(); // Read the ':'
                     block.Options[Option.MaxDistance].Value = reader.GetSingle();
                     _ = reader.Read(); // Read end object
@@ -106,6 +127,7 @@ namespace _3DScanning.Model
             return block;
         }
 
+        /// <inheritdoc/>
         public override void Write(Utf8JsonWriter writer, ProcessingBlock block, JsonSerializerOptions options)
         {
             var name = block.Info[CameraInfo.Name];
@@ -148,6 +170,42 @@ namespace _3DScanning.Model
                 default:
                     throw new NotSupportedException($"The filter {name} is not supported in this converter");
             }
+        }
+    }
+
+    /// <inheritdoc/>
+    /// <see cref="ProcessingBlockConverter"/>
+    public class ListProcessingBlockConverter : JsonConverter<List<ProcessingBlock>>
+    {
+        /// <inheritdoc/>
+        public override List<ProcessingBlock> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            //Note: Maybe we should add checks for each read.
+
+            var pbConverter = new ProcessingBlockConverter();
+            var res = new List<ProcessingBlock>();
+
+            _ = reader.Read(); // Read start array 
+
+            while (reader.TokenType != JsonTokenType.EndArray)
+            {
+                res.Add(pbConverter.Read(ref reader, typeof(ProcessingBlock), options));
+                _ = reader.Read(); // Read the ',' and at last read the end array
+            }
+
+            return res;
+        }
+
+        /// <inheritdoc/>
+        public override void Write(Utf8JsonWriter writer, List<ProcessingBlock> blocks, JsonSerializerOptions options)
+        {
+            var pbConverter = new ProcessingBlockConverter();
+            writer.WriteStartArray();
+            for (var i = 0; i < blocks.Count; ++i)
+            {
+                pbConverter.Write(writer, blocks[i], options);
+            }
+            writer.WriteEndArray();
         }
     }
 }
