@@ -28,7 +28,8 @@ namespace _3DScanning
 
         public MainWindow()
         {
-            Application.Current.Properties["CamerasManager"] = new CamerasManager();
+            Application.Current.Properties["CamerasManagerVM"] = new CamerasManagerVM();
+            Application.Current.Properties["ScanManagerVM"] = new ScanManagerVM();
             InitializeComponent();
             
             controls = new Dictionary<string, UserControl>();

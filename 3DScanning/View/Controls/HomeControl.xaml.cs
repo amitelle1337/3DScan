@@ -19,17 +19,23 @@ namespace _3DScanning.View.Controls
     /// </summary>
     public partial class HomeControl : UserControl
     {
+        public string FileType { get; set; }
         public HomeControl()
         {
             InitializeComponent();
 
-            var vm = (CamerasManager)App.Current.Properties["CamerasManager"];
+            var vm = (CamerasManagerVM)Application.Current.Properties["CamerasManagerVM"];
             LeftSide.Children.Add(new UserControlCamerasStructure(vm.Locations));
 
             // initialize left side
             // Capture button
             // file choice
             // Calibrate button
+        }
+
+        private void Capture_Click(object sender, RoutedEventArgs e)
+        {
+            var scanner = (ScanManagerVM)Application.Current.Properties["ScanManagerVM"];
         }
     }
 }

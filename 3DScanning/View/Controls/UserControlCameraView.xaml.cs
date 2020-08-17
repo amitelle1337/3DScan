@@ -19,7 +19,7 @@ namespace _3DScanning.View.Controls
     /// </summary>
     public partial class UserControlCameraView : UserControl
     {
-        public UserControlCameraView(CamerasManager.Camera cam)
+        public UserControlCameraView(CamerasManagerVM.Camera cam)
         {
             InitializeComponent();
             this.DataContext = cam;

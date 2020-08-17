@@ -39,17 +39,30 @@ namespace _3DScanning.View.Controls
             // normalzation:
             for (var i = 0; i < locations.Count; i++)
             {
-                var a = width * (locations[i].x - minimum.Item1) / (maximum.Item1 - minimum.Item1);
-                var b = height * (locations[i].y - minimum.Item2) / (maximum.Item2 - minimum.Item2);
-                locations[i] = (a, b);
-                points[i] = (points[i].label ,(a, b));
+                var x = width * (locations[i].x - minimum.Item1) / (maximum.Item1 - minimum.Item1);
+                var y = height * (locations[i].y - minimum.Item2) / (maximum.Item2 - minimum.Item2);
+                locations[i] = (x, y);
+                points[i] = (points[i].label ,(x, y));
             }
+
+            // draw center
+            var center = (locations[0].x, locations[0].y + height / 2);
+            var myEllipse = new Ellipse();
+            var b = (Brush)Brushes.Black;
+            myEllipse.Fill = b;
+            myEllipse.StrokeThickness = 0.5;
+            myEllipse.Stroke = Brushes.Black;
+            myEllipse.Width = 10;
+            myEllipse.Height = 10;
+            Canvas.SetLeft(myEllipse, center.x);
+            Canvas.SetTop(myEllipse, center.Item2);
+            myCanvas.Children.Add(myEllipse);
 
             // draw:
             foreach ((string label, (double x, double y)) in points)
             {
-                var myEllipse = new Ellipse();
-                var b = PickBrush();
+                myEllipse = new Ellipse();
+                b = PickBrush();
                 myEllipse.Fill = b;
                 myEllipse.StrokeThickness = 0.5;
                 myEllipse.Stroke = Brushes.Black;
@@ -65,6 +78,8 @@ namespace _3DScanning.View.Controls
                 Canvas.SetTop(textblock, y + 5);
                 myCanvas.Children.Add(textblock);
             }
+
+
         }
 
         private static (double, double) max(List<(double x, double y)> l)

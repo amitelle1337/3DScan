@@ -40,11 +40,11 @@
 
                 <TextBlock Text="Filters: " Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" FontSize="12"/>
                 <StackPanel Grid.Column="1" Grid.Row="4">
-                    <CheckBox IsChecked="True">Threshold filter</CheckBox>
+                    <CheckBox>Decimation filter</CheckBox>
+                    <CheckBox>Spatial Filter</CheckBox>
                     <CheckBox IsChecked="True">Temporal filter</CheckBox>
                     <CheckBox>Holes filling filter</CheckBox>
-                    <CheckBox>Decimation filter</CheckBox>
-                    <CheckBox>Spatial filter</CheckBox>
+                    <CheckBox IsChecked="True">Threshold filter</CheckBox>
                 </StackPanel>
 
             </Grid>

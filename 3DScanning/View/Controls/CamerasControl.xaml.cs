@@ -23,12 +23,12 @@ namespace _3DScanning.View.Controls
         public CamerasControl()
         {
             InitializeComponent();
-            var cm = (CamerasManager)App.Current.Properties["CamerasManager"];
+            var cm = (CamerasManagerVM)Application.Current.Properties["CamerasManagerVM"];
             var cams = cm.Cameras;
 
             var items = new List<UserControlCameraView>();
 
-            foreach (CamerasManager.Camera c in cams)
+            foreach (CamerasManagerVM.Camera c in cams)
             {
                 items.Add(new UserControlCameraView(c));
             }

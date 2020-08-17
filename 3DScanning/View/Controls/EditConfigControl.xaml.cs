@@ -25,9 +25,9 @@ namespace _3DScanning.View.Controls
 
             var items = new List<UserControlCameraEdit>();
 
-            var vm = (CamerasManager)App.Current.Properties["CamerasManager"];
+            var vm = (CamerasManagerVM)Application.Current.Properties["CamerasManagerVM"];
 
-            foreach (CamerasManager.Camera c in vm.Cameras)
+            foreach (CamerasManagerVM.Camera c in vm.Cameras)
             {
                 var item = new UserControlCameraEdit(c);
                 items.Add(item);

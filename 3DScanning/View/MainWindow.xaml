@@ -22,7 +22,7 @@
         <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="#3891A6"/>
 
         <Viewbox Stretch="Uniform" Grid.Row="1" Grid.Column="0" Margin="5 5">
-            <TextBlock Text="3DScanning" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#3891A6"/>
+            <TextBlock Text="3DScanning" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#698F3F"/>
         </Viewbox>
 
         <Grid Grid.Column="0" Grid.Row="2" Background="#3891A6">
@@ -31,7 +31,7 @@
             </ScrollViewer>
         </Grid>
 
-        <StackPanel x:Name="MainPage" Grid.Column="1" Grid.Row="2"/>
+        <Grid x:Name="MainPage" Grid.Column="1" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
 
         <!--<Frame x:Name="MainFrame" Grid.Column="1" Grid.Row="2" Source="EditConfigView.xaml"/>-->
     </Grid>

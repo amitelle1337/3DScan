@@ -7,24 +7,41 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Height="450">
+    <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <WrapPanel x:Name="LeftSide" Grid.Column="0" Margin="10 30"/>
 
-        <Grid x:Name="RightSide" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid x:Name="RightSide" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="100 0 10 50">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#3891A6" BorderBrush="Black" FontSize="20"
-                    Width="200" Height="50" VerticalAlignment="Center" Grid.Row="0">Capture</Button>
-
-            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#3891A6" BorderBrush="Black"
-                    Width="150" VerticalAlignment="Top" Grid.Row="1">calibrate</Button>
+            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#698F3F" BorderBrush="#698F3F" FontSize="20" Click="Capture_Click"
+                    Margin="10" Width="200" Height="50" VerticalAlignment="Center" Grid.Row="0">Capture</Button>
+            <Grid Grid.Row="1" Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <RadioButton GroupName="filetype" Grid.Column="0" IsChecked="True" Background="#698F3F"
+                             Style="{DynamicResource MaterialDesignAccentRadioButton}">.xyz</RadioButton>
+                <RadioButton GroupName="filetype" Grid.Column="1" Background="#698F3F"
+                             Style="{DynamicResource MaterialDesignAccentRadioButton}">.stl</RadioButton>
+                <RadioButton GroupName="filetype" Grid.Column="2" Background="#698F3F"
+                             Style="{DynamicResource MaterialDesignAccentRadioButton}" >.ply</RadioButton>
+                <RadioButton GroupName="filetype" Grid.Column="3" Background="#698F3F"
+                             Style="{DynamicResource MaterialDesignAccentRadioButton}" >.obj</RadioButton>
+            </Grid>
+            <Button materialDesign:ButtonAssist.CornerRadius="5" Background="#698F3F" BorderBrush="#698F3F"
+                    Margin="10" Width="150" VerticalAlignment="Top" Grid.Row="2">calibrate</Button>
         </Grid>
     </Grid>
 </UserControl>

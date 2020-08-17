@@ -1,5 +1,5 @@
 ﻿Black: #12130F
 White: #F7F4EA
 Blue: #3891A6
-Green: #71816D
+Green: #71816D #698F3F
 Pink: #BD8B9C

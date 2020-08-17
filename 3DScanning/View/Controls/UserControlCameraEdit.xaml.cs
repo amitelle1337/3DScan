@@ -21,7 +21,7 @@ namespace _3DScanning.View.Controls
     public partial class UserControlCameraEdit : UserControl
     {
 
-        public UserControlCameraEdit(CamerasManager.Camera camera)
+        public UserControlCameraEdit(CamerasManagerVM.Camera camera)
         {
             InitializeComponent();
             this.DataContext = camera;
@@ -30,7 +30,7 @@ namespace _3DScanning.View.Controls
         private void Grid_GotFocus(object sender, RoutedEventArgs e)
         {
             var converter = new BrushConverter();
-            OuterBrush.BorderBrush = (Brush)converter.ConvertFromString("#3891A6");
+            OuterBrush.BorderBrush = (Brush)converter.ConvertFromString("#698F3F");
         }
 
         private void Grid_LostFocus(object sender, RoutedEventArgs e)

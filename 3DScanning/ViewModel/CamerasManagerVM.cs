@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using _3DScanning.Model;
 
 namespace _3DScanning.ViewModel
 {
-    public class CamerasManager
+    public class CamerasManagerVM
     {
         public List<Camera> Cameras { get; private set; }
         public List<String> SequenceNumbers { 
@@ -29,16 +30,21 @@ namespace _3DScanning.ViewModel
                 }
                 return l;
             } }
+        Model.ScanManager ScanManagerModel { get; set; }
 
-        public CamerasManager()
+        public CamerasManagerVM()
         {
-            var l = new List<Camera>();
-            l.Add(new Camera("918512070565", 0.7f, 0, 0, 0, 0, true));
-            l.Add(new Camera("00000000f0141013", 0.64f, 60, 0, 0, 0, true));
-            l.Add(new Camera("918512073384", 0.77f, 120, 0, 0, 0, true));
-            l.Add(new Camera("00000000f0090129", 0.81f, 180, 0, 0, 0, true));
-            l.Add(new Camera("918512072325", 0.7f, 240, 0, 0, 0, true));
-            l.Add(new Camera("00000000f0090440", 0.83f, 300, 0, 0, 0, true));
+            ScanManagerModel = new Model.ScanManager();
+
+            var l = new List<Camera>
+            {
+                new Camera("918512070565", 0.7f, 0, 0, 0, 0, true),
+                new Camera("00000000f0141013", 0.68f, 60, 0, 0, 0, true),
+                new Camera("918512073384", 0.75f, 120, 0, 0, 0, true),
+                new Camera("00000000f0090129", 0.71f, 180, 0, 0, 0, true),
+                new Camera("918512072325", 0.7f, 240, 0, 0, 0, true),
+                new Camera("00000000f0090440", 0.72f, 300, 0, 0, 0, true)
+            };
             Cameras = l;
         }
 
