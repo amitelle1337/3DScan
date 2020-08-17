@@ -1,4 +1,5 @@
 ﻿using Intel.RealSense;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -40,7 +41,7 @@ namespace _3DScanning.Model
             Cameras = new List<Camera>();
             FramesNumber = 15;
             DummyFramesNumber = 30;
-            Filename = "default.stl";
+            Filename = "default";
             CalibraitionSurface = default;
             Debug = false;
         }
@@ -61,14 +62,10 @@ namespace _3DScanning.Model
         /// Scans an object with the available cameras , and applies the appropriate transoms to each camera's output to get the desired result.
         /// </summary>
         /// <returns>The resulting point-cloud.</returns>
-        /// <remarks>Uses the <c>CaptureFrames</c> instead of <c>CaptureFrame</c>, the 'default' implantation. Benchmark is needed.</remarks>
-        /// <seealso cref="ScanObjectV2"/>
-        /// <see cref="Camera.CaptureFrames(int, int)"/>
-        /// <see cref="Camera.CaptureFrame(int, int)"/>
         public List<Vector3> ScanObject()
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && (c.On)).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && (c.On)).ToList();
+            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
+            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
 
             var tasks = new List<Task<List<Vector3>>>(depthCams.Count() + lidarCams.Count());
 
@@ -77,12 +74,7 @@ namespace _3DScanning.Model
                 tasks.Add(Task.Run(() =>
                 {
                     var frames = dcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                    var frame = dcam.ApplyFilters(frames);
-                    Utils.DisposeAll(frames);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    dcam.AdjustAndRotateInPlace(pointcloud);
-                    return pointcloud;
+                    return FramesToPointCloud(dcam, frames);
                 }));
             }
 
@@ -90,15 +82,7 @@ namespace _3DScanning.Model
             foreach (var lcam in lidarCams)
             {
                 var frames = lcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() =>
-                {
-                    var frame = lcam.ApplyFilters(frames);
-                    Utils.DisposeAll(frames);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    lcam.AdjustAndRotateInPlace(pointcloud);
-                    return pointcloud;
-                }));
+                tasks.Add(Task.Run(() => FramesToPointCloud(lcam, frames)));
             }
 
             var pointcloud = new List<Vector3>();
@@ -109,58 +93,18 @@ namespace _3DScanning.Model
             }
 
             return pointcloud;
-        }
 
-        /// <summary>
-        /// Scans an object with the available cameras , and applies the appropriate transoms to each camera's output to get the desired result.
-        /// </summary>
-        /// <returns>The resulting point-cloud.</returns>
-        /// <remarks>Uses the <c>CaptureFrame</c> instead of <c>CaptureFrames</c> in order to achieve better performance. Benchmark is needed.</remarks>
-        /// <seealso cref="ScanObjectV2"/>
-        /// <see cref="Camera.CaptureFrames(int, int)"/>
-        /// <see cref="Camera.CaptureFrame(int, int)"/>
-        public List<Vector3> ScanObjectV2()
-        {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && (c.On)).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && (c.On)).ToList();
-
-            var tasks = new List<Task<List<Vector3>>>(depthCams.Count() + lidarCams.Count());
-
-            foreach (var dcam in depthCams)
+            // Utility function
+            List<Vector3> FramesToPointCloud(Camera cam, DepthFrame[] frames)
             {
-                tasks.Add(Task.Run(() =>
-                {
-                    var frame = dcam.CaptureFrame(FramesNumber, DummyFramesNumber);
-                    frame = dcam.ApplyFilters(frame);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    dcam.AdjustAndRotateInPlace(pointcloud);
-                    return pointcloud;
-                }));
+                cam.ResetFilters();
+                var frame = cam.ApplyFilters(frames);
+                Utils.DisposeAll(frames);
+                var pointcloud = Utils.FrameToPointCloud(frame);
+                frame.Dispose();
+                cam.AdjustAndRotateInPlace(pointcloud);
+                return pointcloud;
             }
-
-            //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
-            foreach (var lcam in lidarCams)
-            {
-                var frame = lcam.CaptureFrame(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() =>
-                {
-                    frame = lcam.ApplyFilters(frame);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    lcam.AdjustAndRotateInPlace(pointcloud);
-                    return pointcloud;
-                }));
-            }
-
-            var pointcloud = new List<Vector3>();
-
-            foreach (var t in tasks)
-            {
-                pointcloud.AddRange(t.Result);
-            }
-
-            return pointcloud;
         }
 
         /// <summary>
@@ -170,8 +114,8 @@ namespace _3DScanning.Model
         /// <see cref="Camera.PositionDeviation"/>
         public void Calibrate()
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && (c.On)).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && (c.On)).ToList();
+            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
+            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
 
             var tasks = new List<Task>(depthCams.Count() + lidarCams.Count());
 
@@ -179,27 +123,46 @@ namespace _3DScanning.Model
             {
                 tasks.Add(Task.Run(() =>
                 {
-                    var frame = dcam.CaptureFrame(FramesNumber, DummyFramesNumber);
-                    frame = dcam.ApplyFilters(frame);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    var dev = Utils.Average(pointcloud);
-                    dcam.PositionDeviation = new Vector3(-dev.X, -dev.Y, dev.Z);
+                    var frames = dcam.CaptureFrames(FramesNumber, DummyFramesNumber);
+                    FramesToAdjustDeviation(dcam, frames);
                 }));
             }
 
             //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
             foreach (var lcam in lidarCams)
             {
-                var frame = lcam.CaptureFrame(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() =>
-                {
-                    frame = lcam.ApplyFilters(frame);
-                    var pointcloud = Utils.FrameToPointCloud(frame);
-                    frame.Dispose();
-                    var dev = Utils.Average(pointcloud);
-                    lcam.PositionDeviation = new Vector3(-dev.X, -dev.Y, dev.Z);
-                }));
+                var frames = lcam.CaptureFrames(FramesNumber, DummyFramesNumber);
+                tasks.Add(Task.Run(() => FramesToAdjustDeviation(lcam, frames)));
+            }
+
+            // Utility function
+            void FramesToAdjustDeviation(Camera cam, DepthFrame[] frames)
+            {
+                cam.ResetFilters();
+                var frame = cam.ApplyFilters(frames);
+                Utils.DisposeAll(frames);
+                var pointcloud = Utils.FrameToPointCloud(frame);
+                frame.Dispose();
+                var dev = Utils.Average(pointcloud);
+                cam.PositionDeviation = new Vector3(-dev.X, -dev.Y, dev.Z);
+            }
+        }
+
+        /// <summary>
+        /// Saves the point-cloud <paramref name="vertices"/> to a file in the format of <paramref name="fileExtension"/>.
+        /// The file name is the <c>Filename</c> property in <c>ScanManager</c>.
+        /// </summary>
+        /// <param name="vertices">The point-cloud to save.</param>
+        /// <param name="fileExtension">The extension of the file (The file's format).</param>
+        public void SavePointCloud(IEnumerable<Vector3> vertices, string fileExtension)
+        {
+            switch (fileExtension)
+            {
+                case "xyz":
+                    Utils.WriteXyz($"{Filename}.{fileExtension}", vertices);
+                    break;
+                default:
+                    throw new NotSupportedException($"The format {fileExtension} is not supported.");
             }
         }
     }

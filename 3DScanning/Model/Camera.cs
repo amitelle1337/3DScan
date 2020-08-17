@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace _3DScanning.Model
@@ -216,53 +217,14 @@ namespace _3DScanning.Model
         }
 
         /// <summary>
-        /// Captures a certain number of frames from this <c>Camera</c> and applies a temporal filter to get one 'average' frame.
+        /// Resets filters' cache.
         /// </summary>
-        /// <param name="framesNumber">The number of frames to capture.</param>
-        /// <param name="dummyFramesNumber">The number of dummy frames to capture. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</param>
-        /// <returns>A of frame, whom has been the result of applying a temporal filter on frames that where capture by this <c>Camera</c>. </returns>
-        /// <seealso cref="CaptureFrames(int, int)"/>
-        /// <remarks>
-        /// Practically the same as the previous method, but uses temporal filter during capture to preserve memory and 'stop-the-world' pauses when disposing all frames at once.
-        /// </remarks>
-        public DepthFrame CaptureFrame(int framesNumber = 1, int dummyFramesNumber = 0)
+        public void ResetFilters()
         {
-            var config = GetConfig();
-            var pipe = new Pipeline();
+            var serializerOptions = new JsonSerializerOptions();
+            serializerOptions.Converters.Add(new ProcessingBlockConverter());
 
-            var pp = pipe.Start(config);
-            try
-            {
-                for (var i = 0; i < dummyFramesNumber; ++i)
-                {
-                    using (pipe.WaitForFrames()) ;
-                }
-
-                using var firstFrameset = pipe.WaitForFrames();
-                var frame = firstFrameset.DepthFrame;
-                var temporalFilter = new TemporalFilter();
-
-                // Release temporary frames
-                using var realeser = new FramesReleaser();
-
-                for (var i = 0; i < framesNumber - 1; ++i)
-                {
-                    using var frameset = pipe.WaitForFrames();
-                    using var depth = frameset.DepthFrame;
-                    frame = temporalFilter.Process<DepthFrame>(depth);
-
-                    if (i < framesNumber - 2)
-                    {
-                        frame.DisposeWith(realeser);
-                    }
-                }
-
-                return frame;
-            }
-            finally
-            {
-                pipe.Stop();
-            }
+            Filters = JsonSerializer.Deserialize<List<ProcessingBlock>>(JsonSerializer.Serialize(Filters, serializerOptions), serializerOptions);
         }
 
         /// <summary>
