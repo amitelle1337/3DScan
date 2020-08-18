@@ -126,5 +126,26 @@ namespace _3DScanning.Model
         {
             return (Math.PI / 180) * angle;
         }
+
+        /// <summary>
+        /// Converts and angle,measured in radians, to degrees.
+        /// </summary>
+        /// <param name="angle">The angle, measured in radians.</param>
+        /// <returns>The <paramref name="angle"/> in degrees.</returns>
+        public static double ToDegrees(double angle)
+        {
+            return (180 / Math.PI) * angle;
+        }
+
+        /// <summary>
+        /// Calculates the cotangent of <paramref name="angle"/>.
+        /// </summary>
+        /// <param name="angle">The angle, measured in radians.</param>
+        /// <returns>The cotangent of <paramref name="angle"/>.</returns>
+        public static double Cot(double angle)
+        {
+            return 1 / Math.Tan(angle);
+        }
+
     }
 }
