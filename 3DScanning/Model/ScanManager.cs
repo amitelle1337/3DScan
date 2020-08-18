@@ -1,169 +1,151 @@
 ﻿using Intel.RealSense;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Numerics;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace _3DScanning.Model
 {
-    /// <summary>
-    /// Class <c>ScanManager</c> manages scanning, calibrating and synchronizing between cameras.
-    /// </summary>
-    /// <see cref="Camera"/>
-    public class ScanManager
+    public static class Utils
     {
-        /// <value>The cameras that the manger can operate on.</value>
-        public IList<Camera> Cameras { get; set; }
-
-        /// <value>The number of frames to capture from each camera when capturing.</value>
-        public int FramesNumber { get; set; }
-
-        /// <value>The number of frames to capture from each camera when capturing. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</value>
-        public int DummyFramesNumber { get; set; }
-
-        /// <value>The name of the file to save the result to.</value>
-        public string Filename { get; set; }
-
-        /// <value>The dimensions of the calibration surface (width, height, distance from center).</value>
-        [JsonConverter(typeof(Vector3Converter))] public Vector3 CalibraitionSurface { get; set; }
-
-        /// <value>Whether to add additional debug information.</value>
-        public bool Debug { get; set; }
-
-
         /// <summary>
-        /// Default constructor.
+        /// Changes to coordinate of each vector in <paramref name="vertices"/> according to the result of <paramref name="func"/> on that vector.
         /// </summary>
-        public ScanManager()
+        /// <param name="vertices">The list of vectors to change.</param>
+        /// <param name="func">The change function to perform on each vector.</param>
+        public static void ChangeCoordinatesInPlace(List<Vector3> vertices, Func<Vector3, Vector3> func)
         {
-            Cameras = new List<Camera>();
-            FramesNumber = 15;
-            DummyFramesNumber = 30;
-            Filename = "default";
-            CalibraitionSurface = default;
-            Debug = false;
-        }
-
-        /// <summary>
-        /// Initializes a default <c>ScanManager</c> with the cameras found in <paramref name="ctx"/>.
-        /// </summary>
-        /// <param name="ctx">The context to query the cameras from.</param>
-        public ScanManager(Context ctx) : this()
-        {
-            foreach (var device in ctx.QueryDevices())
+            for (var i = 0; i < vertices.Count; ++i)
             {
-                Cameras.Add(new Camera(device.Info.GetInfo(CameraInfo.SerialNumber)));
+                vertices[i] = func(vertices[i]);
             }
         }
 
         /// <summary>
-        /// Scans an object with the available cameras , and applies the appropriate transoms to each camera's output to get the desired result.
+        /// Converts a DepthFrame to a point-cloud with none-zero points.
         /// </summary>
-        /// <returns>The resulting point-cloud.</returns>
-        public List<Vector3> ScanObject()
+        /// <param name="frame">A frame to convert to a point-cloud.</param>
+        /// <returns>The resulted point-cloud generated from that frame.</returns>
+        public static List<Vector3> FrameToPointCloud(DepthFrame frame)
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
+            var pc = new PointCloud();
 
-            var tasks = new List<Task<List<Vector3>>>(depthCams.Count() + lidarCams.Count());
+            using var points = pc.Process(frame).As<Points>();
+            var tmp = new Vector3[points.Count];
+            points.CopyVertices(tmp);
 
-            foreach (var dcam in depthCams)
+            var vertices = new List<Vector3>();
+
+
+            foreach (var v in tmp)
             {
-                tasks.Add(Task.Run(() =>
+                if (!v.Equals(Vector3.Zero))
                 {
-                    var frames = dcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                    return FramesToPointCloud(dcam, frames);
-                }));
+                    vertices.Add(v);
+                }
             }
 
-            //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
-            foreach (var lcam in lidarCams)
+            return vertices;
+        }
+
+        /// <summary>
+        /// Rotates a point-cloud around the y axis <paramref name="angle"/> degrees.
+        /// </summary>
+        /// <param name="vertices">The list of vectors to rotated around the y axis.</param>
+        /// <param name="angle">The angle, measured in degrees.</param>
+        public static void RotateAroundYAxisInPlace(List<Vector3> vertices, double angle)
+        {
+            var radAngle = ToRadians(angle);
+            var rotationMatrix = new Matrix4x4(
+                (float)Math.Cos(radAngle), 0, -(float)Math.Sin(radAngle), 0,
+                0, 1, 0, 0,
+                (float)Math.Sin(radAngle), 0, (float)Math.Cos(radAngle), 0,
+                0, 0, 0, 1
+            );
+
+            for (var i = 0; i < vertices.Count; ++i)
             {
-                var frames = lcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() => FramesToPointCloud(lcam, frames)));
-            }
-
-            var pointcloud = new List<Vector3>();
-
-            foreach (var t in tasks)
-            {
-                pointcloud.AddRange(t.Result);
-            }
-
-            return pointcloud;
-
-            // Utility function
-            List<Vector3> FramesToPointCloud(Camera cam, DepthFrame[] frames)
-            {
-                cam.ResetFilters();
-                var frame = cam.ApplyFilters(frames);
-                Utils.DisposeAll(frames);
-                var pointcloud = Utils.FrameToPointCloud(frame);
-                frame.Dispose();
-                cam.AdjustAndRotateInPlace(pointcloud);
-                return pointcloud;
+                vertices[i] = Vector3.Transform(vertices[i], rotationMatrix);
             }
         }
 
         /// <summary>
-        /// Scan the calibration object (assuming it's the object that is being captured), and calculates the deviations of the each camera from
-        /// that object in (x, y, z). Updates each camera accordingly.
+        /// Writes a .xyz file with the <paramref name="vertices"/>.
         /// </summary>
-        /// <see cref="Camera.PositionDeviation"/>
-        public void Calibrate()
+        /// <param name="filename">The name of the file to write.</param>
+        /// <param name="vertices">The points to write to the file.</param>
+        public static void WriteXyz(string filename, IEnumerable<Vector3> vertices)
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
-
-            var tasks = new List<Task>(depthCams.Count() + lidarCams.Count());
-
-            foreach (var dcam in depthCams)
+            using var writer = new StreamWriter(filename);
+            foreach (var v in vertices)
             {
-                tasks.Add(Task.Run(() =>
-                {
-                    var frames = dcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                    FramesToAdjustDeviation(dcam, frames);
-                }));
-            }
-
-            //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
-            foreach (var lcam in lidarCams)
-            {
-                var frames = lcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() => FramesToAdjustDeviation(lcam, frames)));
-            }
-
-            // Utility function
-            void FramesToAdjustDeviation(Camera cam, DepthFrame[] frames)
-            {
-                cam.ResetFilters();
-                var frame = cam.ApplyFilters(frames);
-                Utils.DisposeAll(frames);
-                var pointcloud = Utils.FrameToPointCloud(frame);
-                frame.Dispose();
-                var dev = Utils.Average(pointcloud);
-                cam.PositionDeviation = new Vector3(-dev.X, -dev.Y, CalibraitionSurface.Z + dev.Z);
+                writer.WriteLine($"{v.X} {v.Y} {v.Z}");
             }
         }
 
         /// <summary>
-        /// Saves the point-cloud <paramref name="vertices"/> to a file in the format of <paramref name="fileExtension"/>.
-        /// The file name is the <c>Filename</c> property in <c>ScanManager</c>.
+        /// Disposes each frame in <paramref name="frames"/>
         /// </summary>
-        /// <param name="vertices">The point-cloud to save.</param>
-        /// <param name="fileExtension">The extension of the file (The file's format).</param>
-        public void SavePointCloud(IEnumerable<Vector3> vertices, string fileExtension = "xyz")
+        /// <param name="frames">The frames to dispose.</param>
+        public static void DisposeAll(IEnumerable<Frame> frames)
         {
-            switch (fileExtension)
+            // Append all frames to be dispose with the releaser and dispose them at once
+            using var releaser = new FramesReleaser();
+            foreach (var frame in frames)
             {
-                case "xyz":
-                    Utils.WriteXyz($"{Filename}.{fileExtension}", vertices);
-                    break;
-                default:
-                    throw new NotSupportedException($"The format {fileExtension} is not supported.");
+                frame.DisposeWith(releaser);
             }
         }
+
+        /// <summary>
+        /// Averages a collections of vectors.
+        /// </summary>
+        /// <param name="vertices">The vectors to find the average of.</param>
+        /// <returns>The average of the vectors in <paramref name="vertices"/></returns>
+        public static Vector3 Average(IEnumerable<Vector3> vertices)
+        {
+            var count = 0;
+            Vector3 acum = Vector3.Zero;
+
+            // Maybe using .Average on each dimension is faster (Maybe even in parallel :O)
+            foreach (var v in vertices)
+            {
+                acum += v;
+                ++count;
+            }
+
+            return acum / count;
+        }
+
+        /// <summary>
+        /// Converts and angle,measured in degrees, to radians.
+        /// </summary>
+        /// <param name="angle">The angle, measured in degrees.</param>
+        /// <returns>The <paramref name="angle"/> in radians.</returns>
+        public static double ToRadians(double angle)
+        {
+            return (Math.PI / 180) * angle;
+        }
+
+        /// <summary>
+        /// Converts and angle,measured in radians, to degrees.
+        /// </summary>
+        /// <param name="angle">The angle, measured in radians.</param>
+        /// <returns>The <paramref name="angle"/> in degrees.</returns>
+        public static double ToDegrees(double angle)
+        {
+            return (180 / Math.PI) * angle;
+        }
+
+        /// <summary>
+        /// Calculates the cotangent of <paramref name="angle"/>.
+        /// </summary>
+        /// <param name="angle">The angle, measured in radians.</param>
+        /// <returns>The cotangent of <paramref name="angle"/>.</returns>
+        public static double Cot(double angle)
+        {
+            return 1 / Math.Tan(angle);
+        }
+
     }
 }
