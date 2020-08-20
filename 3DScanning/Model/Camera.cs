@@ -187,24 +187,26 @@ namespace _3DScanning.Model
                 }
                 using var firstFrameset = pipe.WaitForFrames();
                 var frame = firstFrameset.DepthFrame;
-                var temporalFilter = new TemporalFilter();
-
-                // Release temporary frames
-                using var realeser = new FramesReleaser();
-
-                for (var i = 0; i < framesNumber - 1; ++i)
+                using (var temporalFilter = new TemporalFilter())
                 {
-                    using var frameset = pipe.WaitForFrames();
-                    using var depth = frameset.DepthFrame;
-                    frame = temporalFilter.Process<DepthFrame>(depth);
+                    // Release temporary frames
+                    using var realeser = new FramesReleaser();
 
-                    if (i < framesNumber - 2)
+                    for (var i = 0; i < framesNumber - 1; ++i)
                     {
-                        frame.DisposeWith(realeser);
+                        if (i < framesNumber - 1)
+                        {
+                            frame.DisposeWith(realeser);
+                        }
+
+                        using var frameset = pipe.WaitForFrames();
+                        using var depth = frameset.DepthFrame;
+                        frame = temporalFilter.Process<DepthFrame>(depth);
                     }
+
+                    return frame;
                 }
 
-                return frame;
             }
             finally
             {
@@ -232,26 +234,27 @@ namespace _3DScanning.Model
         public DepthFrame ApplyFilters(IEnumerable<DepthFrame> frames)
         {
             var res = frames.First(_ => true);
-            var tempFilter = new TemporalFilter();
-
-            // Release temporary frames
-            using var realeser = new FramesReleaser();
-
-            var i = 0;
-            foreach (var f in frames)
+            using (var tempFilter = new TemporalFilter())
             {
-                res = tempFilter.Process<DepthFrame>(f);
+                // Release temporary frames
+                using var realeser = new FramesReleaser();
 
-                // Release each frame which is not the last
-                if (i < frames.Count() - 1)
+                var i = 0;
+                foreach (var f in frames)
                 {
-                    res.DisposeWith(realeser);
+                    res = tempFilter.Process<DepthFrame>(f);
+
+                    // Release each frame which is not the last
+                    if (i < frames.Count() - 1)
+                    {
+                        res.DisposeWith(realeser);
+                    }
+
+                    ++i;
                 }
 
-                ++i;
+                return ApplyFilters(res);
             }
-
-            return ApplyFilters(res);
         }
 
         /// <summary>
