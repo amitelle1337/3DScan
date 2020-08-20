@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace _3DScanning.Model
@@ -65,29 +66,41 @@ namespace _3DScanning.Model
         /// <returns>The resulting point-cloud.</returns>
         public List<Vector3> ScanObject()
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
+            var depthCams = Cameras.Where(c => (c.Type == CameraType.Sereo_Depth) && c.On).ToList();
+            var lightCams = Cameras.Where(c => ((c.Type == CameraType.LiDAR) || (c.Type == CameraType.Coded_Light)) && c.On).ToList();
+
             var onCams = new List<Camera>(depthCams);
-            onCams.AddRange(lidarCams);
+            onCams.AddRange(lightCams);
             onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
 
-            var tasks = new List<Task<List<Vector3>>>(depthCams.Count() + lidarCams.Count());
+            var tasks = new List<Task<List<Vector3>>>(onCams.Count);
 
-            foreach (var dcam in depthCams)
+            // Depth cameras can capture simultaneously without the present of other types of cameras.
+            // Therefore we need to synchronize the completion of capturing with depth cameras before capturing with other types of cameras.
+            // This way we get maximum performance, rather than capturing simultaneously and 'waisting' time.
+            using (var barrier = new Barrier(depthCams.Count + 1))
             {
-                tasks.Add(Task.Run(() =>
+
+                foreach (var dcam in depthCams)
                 {
-                    var frame = dcam.CaptureFrame(FramesNumber, DummyFramesNumber);
-                    return FrameToPointCloud(dcam, frame);
-                }));
+                    tasks.Add(Task.Run(() =>
+                    {
+                        var frame = dcam.CaptureFrame(FramesNumber, DummyFramesNumber);
+                        barrier.RemoveParticipant();
+                        return FrameToPointCloud(dcam, frame);
+                    }));
+                }
+
+                barrier.SignalAndWait();
             }
 
-            //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
-            foreach (var lcam in lidarCams)
+            //LiDAR and Coded-Light cameras cannot capture simultaneously, capture synchronously and launch a calculation task
+            foreach (var lcam in lightCams)
             {
                 var frame = lcam.CaptureFrame(FramesNumber, DummyFramesNumber);
                 tasks.Add(Task.Run(() => FrameToPointCloud(lcam, frame)));
             }
+
 
             var pointcloud = new List<Vector3>();
 
@@ -102,29 +115,31 @@ namespace _3DScanning.Model
             List<Vector3> FrameToPointCloud(Camera cam, DepthFrame frame)
             {
                 cam.ResetFilters();
-                frame = cam.ApplyFilters(frame);
-                var pointcloud = Utils.FrameToPointCloud(frame);
+                var filteredFrame = cam.ApplyFilters(frame);
                 frame.Dispose();
+                var pointcloud = Utils.FrameToPointCloud(filteredFrame);
+                filteredFrame.Dispose();
                 cam.AdjustAndRotateInPlace(pointcloud);
 
-                var idx = onCams.FindIndex(c => c.Angle == cam.Angle);
-                var before = idx == 0 ? onCams.Last() : onCams[idx - 1];
-                var after = idx == onCams.Count - 1 ? onCams.First() : onCams[idx + 1];
+                // *** Debug general filtering ***
+                //var idx = onCams.FindIndex(c => c.Angle == cam.Angle);
+                //var before = idx == 0 ? onCams.Last() : onCams[idx - 1];
+                //var after = idx == onCams.Count - 1 ? onCams.First() : onCams[idx + 1];
 
-                var lowerBound = cam.FindCriticalAngle(before);
-                var upperBound = cam.FindCriticalAngle(after);
+                //var lowerBound = cam.FindCriticalAngle(before);
+                //var upperBound = cam.FindCriticalAngle(after);
 
-                if (lowerBound == upperBound)
-                {
-                    if (lowerBound < 0)
-                    {
-                        upperBound = Math.PI;
-                    }
-                    else
-                    {
-                        lowerBound = -Math.PI;
-                    }
-                }
+                //if (lowerBound == upperBound)
+                //{
+                //    if (lowerBound < 0)
+                //    {
+                //        upperBound = Math.PI;
+                //    }
+                //    else
+                //    {
+                //        lowerBound = -Math.PI;
+                //    }
+                //}
 
                 //var filtered = pointcloud.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound);
 
@@ -139,25 +154,35 @@ namespace _3DScanning.Model
         /// <see cref="Camera.PositionDeviation"/>
         public void Calibrate()
         {
-            var depthCams = Cameras.Where(c => (c.Type == CameraType.Depth) && c.On).ToList();
-            var lidarCams = Cameras.Where(c => (c.Type == CameraType.LiDAR) && c.On).ToList();
+            var depthCams = Cameras.Where(c => (c.Type == CameraType.Sereo_Depth) && c.On).ToList();
+            var lightCams = Cameras.Where(c => ((c.Type == CameraType.LiDAR) || (c.Type == CameraType.Coded_Light)) && c.On).ToList();
 
-            var tasks = new List<Task>(depthCams.Count() + lidarCams.Count());
+            var tasks = new List<Task>(depthCams.Count() + lightCams.Count());
 
-            foreach (var dcam in depthCams)
+            // Depth cameras can capture simultaneously without the present of other types of cameras.
+            // Therefore we need to synchronize the completion of capturing with depth cameras before capturing with other types of cameras.
+            // This way we get maximum performance, rather than capturing simultaneously and 'waisting' time.
+            using (var barrier = new Barrier(depthCams.Count + 1))
             {
-                tasks.Add(Task.Run(() =>
+
+                foreach (var dcam in depthCams)
                 {
-                    var frames = dcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                    FramesToAdjustDeviation(dcam, frames);
-                }));
+                    tasks.Add(Task.Run(() =>
+                    {
+                        var frame = dcam.CaptureFrame(FramesNumber, DummyFramesNumber);
+                        barrier.RemoveParticipant();
+                        FramesToAdjustDeviation(dcam, frame);
+                    }));
+                }
+
+                barrier.SignalAndWait();
             }
 
-            //LiDAR cameras cannot capture simultaneously, capture synchronously and launch a calculation task
-            foreach (var lcam in lidarCams)
+            //LiDAR and Coded-Light cameras cannot capture simultaneously, capture synchronously and launch a calculation task
+            foreach (var lcam in lightCams)
             {
-                var frames = lcam.CaptureFrames(FramesNumber, DummyFramesNumber);
-                tasks.Add(Task.Run(() => FramesToAdjustDeviation(lcam, frames)));
+                var frame = lcam.CaptureFrame(FramesNumber, DummyFramesNumber);
+                tasks.Add(Task.Run(() => FramesToAdjustDeviation(lcam, frame)));
             }
 
             foreach (var task in tasks)
@@ -166,13 +191,13 @@ namespace _3DScanning.Model
             }
 
             // Utility function
-            void FramesToAdjustDeviation(Camera cam, DepthFrame[] frames)
+            void FramesToAdjustDeviation(Camera cam, DepthFrame frame)
             {
                 cam.ResetFilters();
-                var frame = cam.ApplyFilters(frames);
-                Utils.DisposeAll(frames);
-                var pointcloud = Utils.FrameToPointCloud(frame);
+                var filteredFrame = cam.ApplyFilters(frame);
                 frame.Dispose();
+                var pointcloud = Utils.FrameToPointCloud(filteredFrame);
+                filteredFrame.Dispose();
                 var dev = Utils.Average(pointcloud);
                 cam.PositionDeviation = new Vector3(-dev.X, -dev.Y, CalibraitionSurface.Z + dev.Z);
             }

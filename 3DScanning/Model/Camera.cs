@@ -9,27 +9,6 @@ using System.Text.Json.Serialization;
 namespace _3DScanning.Model
 {
     /// <summary>
-    /// Represents the technology the <c>Camera</c> uses.
-    /// </summary>
-    /// <see cref="Camera"/>
-    /// 
-    public enum CameraType : ushort
-    {
-        /// <summary>
-        /// The <c>Undefined</c> value represents a camera that the current version of the code does not support.
-        /// </summary>
-        Undefined = 'U',
-        /// <summary>
-        /// The <c>Depth</c> value represents a stereo-depth technology. e.g D435i, D415, etc...
-        /// </summary>
-        Depth = 'D',
-        /// <summary>
-        /// The <c>LiDAR</c> value represents a LiDAR technology. e.g L515.
-        /// </summary>
-        LiDAR = 'L'
-    }
-
-    /// <summary>
     /// Class <c>Camera</c> models a camera in three-dimensional space.
     /// </summary>
     /// <see cref="CameraType"/>
@@ -49,8 +28,8 @@ namespace _3DScanning.Model
             set
             {
                 _serial = value;
-                Type = QuarryCameraType(_serial);
-                var intrinsics = GetIntrinsics();
+                Type = CameraTypeFunctions.QuarryCameraType(_serial);
+                var intrinsics = GetDepthIntrinsics();
                 FOV = new Vector2(intrinsics.FOV[0], intrinsics.FOV[1]);
             }
         }
@@ -108,43 +87,13 @@ namespace _3DScanning.Model
         public Camera(string serial, float angle = default, Vector3 posDev = default, bool on = true)
         {
             Serial = serial;
-            Type = QuarryCameraType(Serial);
             Angle = angle;
             PositionDeviation = posDev;
             Filters = new List<ProcessingBlock>();
             On = on;
         }
 
-        /// <summary>
-        /// Finds the <c>CameraType</c> of a device with serial number <paramref name="serial"/>.
-        /// </summary>
-        /// <param name="serial">The serial number of the device.</param>
-        /// <returns>The <c>CameraType</c> of the device. If no device found throws exception.</returns>
-        /// <see cref="CameraType"/>
-        public static CameraType QuarryCameraType(string serial)
-        {
-            using (var ctx = new Context())
-            {
-                var devices = ctx.QueryDevices();
-                foreach (var device in devices)
-                {
-                    if (device.Info.GetInfo(CameraInfo.SerialNumber) != serial) continue;
 
-                    var name = device.Info.GetInfo(CameraInfo.Name);
-                    var lastSpaceIdx = name.LastIndexOf(' ');
-                    var v = (CameraType)name[lastSpaceIdx + 1];
-
-                    if (!Enum.IsDefined(typeof(CameraType), v))
-                    {
-                        return CameraType.Undefined;
-                    }
-
-                    return v;
-                }
-            }
-
-            throw new Exception($"The device with serial number {serial} is not connected");
-        }
 
 
         /// <summary>
@@ -164,7 +113,7 @@ namespace _3DScanning.Model
         /// Gets the intrinsics of this <c>Camera</c>.
         /// </summary>
         /// <returns>This camera's intrinsics.</returns>
-        public Intrinsics GetIntrinsics()
+        public Intrinsics GetDepthIntrinsics()
         {
             var config = GetConfig();
             var pipe = new Pipeline();
