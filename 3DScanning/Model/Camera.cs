@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace _3DScanning.Model
@@ -57,10 +56,11 @@ namespace _3DScanning.Model
         /// </value>
         [JsonConverter(typeof(Vector3Converter))] public Vector3 PositionDeviation { get; set; }
 
-        /// <value>
-        /// The filter associated with the <c>Camera</c>.
-        /// </value>
-        [JsonConverter(typeof(ListProcessingBlockConverter))] public List<ProcessingBlock> Filters { get; set; }
+        public DecimationFilterWarpper DecimationWrapper { get; private set; }
+        public SpatialFilterWarpper SpatialWrapper { get; private set; }
+        public TemporalFilterWrapper TemporalWrapper { get; private set; }
+        public HoleFillingFilterWrapper HoleFillingWrapper { get; private set; }
+        public ThresholdFilterWrapper ThresholdWrapper { get; private set; }
 
         /// <value>
         /// Whether the camera is on or off.
@@ -89,18 +89,50 @@ namespace _3DScanning.Model
             Serial = serial;
             Angle = angle;
             PositionDeviation = posDev;
-            Filters = new List<ProcessingBlock>();
             On = on;
+            DecimationWrapper = new DecimationFilterWarpper();
+            SpatialWrapper = new SpatialFilterWarpper();
+            TemporalWrapper = new TemporalFilterWrapper();
+            HoleFillingWrapper = new HoleFillingFilterWrapper();
+            ThresholdWrapper = new ThresholdFilterWrapper();
         }
 
+        /// <summary>
+        /// The filters have a recommended order of activation.
+        /// This method returns the custom wrappers in that order.
+        /// </summary>
+        /// <returns>The filter wrappers in the recommended order of activation.</returns>
+        public FilterWrapper[] GetWrapperInOrder()
+        {
+            return new FilterWrapper[] { DecimationWrapper, SpatialWrapper, TemporalWrapper, HoleFillingWrapper, ThresholdWrapper };
+        }
 
+        /// <summary>
+        /// The filters have a recommended order of activation.
+        /// This method returns the filters in that order.
+        /// </summary>
+        /// <returns>The filter in the recommended order of activation.</returns>
+        /// <remarks>The caller need to dispose the filters.</remarks>
+        public List<ProcessingBlock> GetOnFiltersInOrder()
+        {
+            var blocks = new List<ProcessingBlock>();
 
+            foreach (var wrapper in GetWrapperInOrder())
+            {
+                if (wrapper.On)
+                {
+                    blocks.Add(wrapper.GetFilter());
+                }
+            }
+
+            return blocks;
+        }
 
         /// <summary>
         /// Gets the appropriate config for this camera.
         /// </summary>
         /// <returns>Returns the depth stream config with this camera's serial number.</returns>
-        public Config GetConfig()
+        public Config GetDepthConfig()
         {
             var config = new Config();
             config.EnableStream(Stream.Depth);
@@ -115,7 +147,7 @@ namespace _3DScanning.Model
         /// <returns>This camera's intrinsics.</returns>
         public Intrinsics GetDepthIntrinsics()
         {
-            var config = GetConfig();
+            var config = GetDepthConfig();
             var pipe = new Pipeline();
 
             var pp = pipe.Start(config);
@@ -135,10 +167,11 @@ namespace _3DScanning.Model
         /// <param name="framesNumber">The number of frames to capture.</param>
         /// <param name="dummyFramesNumber">The number of dummy frames to capture. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</param>
         /// <returns>An array of frames, whom have been captured by this <c>Camera</c>. </returns>
+        /// <remarks>The caller need to dispose the frames.</remarks>
         /// <seealso cref="CaptureFrame(int, int)"/>
-        public DepthFrame[] CaptureFrames(int framesNumber = 1, int dummyFramesNumber = 0)
+        public DepthFrame[] CaptureFrames(int framesNumber = 1, int dummyFramesNumber = 30)
         {
-            var config = GetConfig();
+            var config = GetDepthConfig();
             var pipe = new Pipeline();
 
             var pp = pipe.Start(config);
@@ -146,7 +179,8 @@ namespace _3DScanning.Model
             {
                 for (var i = 0; i < dummyFramesNumber; ++i)
                 {
-                    using (pipe.WaitForFrames()) ;
+                    using (var frames = pipe.WaitForFrames())
+                    using (var depth = frames.DepthFrame) ;
                 }
 
                 var framesArr = new DepthFrame[framesNumber];
@@ -165,17 +199,21 @@ namespace _3DScanning.Model
             }
         }
 
+        /// <summary>
+        /// Captures an average of frame from this <c>Camera</c>. (Capturing several frames and applying temporal filter).
         /// </summary>
         /// <param name="framesNumber">The number of frames to capture.</param>
         /// <param name="dummyFramesNumber">The number of dummy frames to capture. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</param>
         /// <returns>A of frame, whom has been the result of applying a temporal filter on frames that where capture by this <c>Camera</c>. </returns>
         /// <seealso cref="CaptureFrames(int, int)"/>
         /// <remarks>
+        /// The caller need to dispose the frame. <br>
         /// Practically the same as the previous method, but uses temporal filter during capture to preserve memory and 'stop-the-world' pauses when disposing all frames at once.
         /// </remarks>
-        public DepthFrame CaptureFrame(int framesNumber = 1, int dummyFramesNumber = 0)
+        /// 
+        public DepthFrame CaptureFrame(int framesNumber = 1, int dummyFramesNumber = 30)
         {
-            var config = GetConfig();
+            var config = GetDepthConfig();
             var pipe = new Pipeline();
 
             var pp = pipe.Start(config);
@@ -183,7 +221,8 @@ namespace _3DScanning.Model
             {
                 for (var i = 0; i < dummyFramesNumber; ++i)
                 {
-                    using (pipe.WaitForFrames()) ;
+                    using (var frames = pipe.WaitForFrames())
+                    using (var depth = frames.DepthFrame) ;
                 }
                 using var firstFrameset = pipe.WaitForFrames();
                 var frame = firstFrameset.DepthFrame;
@@ -215,22 +254,12 @@ namespace _3DScanning.Model
         }
 
         /// <summary>
-        /// Resets filters' cache.
-        /// </summary>
-        public void ResetFilters()
-        {
-            var serializerOptions = new JsonSerializerOptions();
-            serializerOptions.Converters.Add(new ProcessingBlockConverter());
-
-            Filters = JsonSerializer.Deserialize<List<ProcessingBlock>>(JsonSerializer.Serialize(Filters, serializerOptions), serializerOptions);
-        }
-
-        /// <summary>
         /// Applies this camera's filters on the resulted frame after 'averaging' them with temporal filter.
         /// </summary>
         /// <param name="frames">A collection of frames to 'average' and apply this camera's filters on.</param>
         /// <returns>The outcome of applying a temporal filter on frames and then applying this camera's filters on the resulted frame.</returns>
         /// <seealso cref="ApplyFilters(DepthFrame)"/>
+        /// <remarks>The caller need to dispose the frame.</remarks>
         public DepthFrame ApplyFilters(IEnumerable<DepthFrame> frames)
         {
             var res = frames.First(_ => true);
@@ -263,24 +292,24 @@ namespace _3DScanning.Model
         /// <param name="frame">A frame to apply this camera's filters on.</param>
         /// <returns>The outcome of applying this camera's filters on the frame.</returns>
         /// <seealso cref="ApplyFilters(IEnumerable{DepthFrame})"/>
+        /// <remarks>The caller need to dispose the frame.</remarks>
         public DepthFrame ApplyFilters(DepthFrame frame)
         {
-            var res = frame;
+            var res = frame.Clone().As<DepthFrame>();
 
-            // Release temporary frames
-            using var realeser = new FramesReleaser();
+            var filters = GetOnFiltersInOrder();
 
             var i = 0;
-            foreach (var filter in Filters)
+            foreach (var filter in filters)
             {
                 res = filter.Process<DepthFrame>(res);
 
                 // Release each frame which is not the last
-                if (i < Filters.Count() - 1)
+                if (i < filters.Count() - 1)
                 {
-                    res.DisposeWith(realeser);
+                    res.Dispose();
                 }
-
+                filter.Dispose();
                 ++i;
             }
 
@@ -298,6 +327,7 @@ namespace _3DScanning.Model
 
             Utils.RotateAroundYAxisInPlace(vertices, Angle);
         }
+
 
         public double FindCriticalAngle(Camera other)
         {

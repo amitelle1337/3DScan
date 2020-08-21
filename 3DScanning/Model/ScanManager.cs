@@ -114,7 +114,6 @@ namespace _3DScanning.Model
             // Utility function
             List<Vector3> FrameToPointCloud(Camera cam, DepthFrame frame)
             {
-                cam.ResetFilters();
                 var filteredFrame = cam.ApplyFilters(frame);
                 frame.Dispose();
                 var pointcloud = Utils.FrameToPointCloud(filteredFrame);
@@ -193,7 +192,6 @@ namespace _3DScanning.Model
             // Utility function
             void FramesToAdjustDeviation(Camera cam, DepthFrame frame)
             {
-                cam.ResetFilters();
                 var filteredFrame = cam.ApplyFilters(frame);
                 frame.Dispose();
                 var pointcloud = Utils.FrameToPointCloud(filteredFrame);
