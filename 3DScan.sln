@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "3DScan", "3DScanning\3DScan.csproj", "{FF7DC9F0-DA8D-434E-B9C5-C534861803D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "3DScan", "3DScan\3DScan.csproj", "{FF7DC9F0-DA8D-434E-B9C5-C534861803D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
