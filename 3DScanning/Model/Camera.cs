@@ -5,7 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text.Json.Serialization;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     /// <summary>
     /// Class <c>Camera</c> models a camera in three-dimensional space.

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace _3DScanning.ViewModel
+namespace _3DScan.ViewModel
 {
     public class SubItem
     {

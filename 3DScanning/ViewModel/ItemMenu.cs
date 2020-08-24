@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Collections.Generic;
 using MaterialDesignThemes.Wpf;
 
-namespace _3DScanning.ViewModel
+namespace _3DScan.ViewModel
 {
     public class ItemMenu
     {

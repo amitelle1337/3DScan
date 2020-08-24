@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>_3DScanning</RootNamespace>
+    <RootNamespace>_3DScan</RootNamespace>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 

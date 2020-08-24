@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     /// <inheritdoc/>
     public class Vector3Converter : JsonConverter<Vector3>

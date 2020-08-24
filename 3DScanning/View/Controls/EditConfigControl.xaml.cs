@@ -10,9 +10,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using _3DScanning.ViewModel;
+using _3DScan.ViewModel;
 
-namespace _3DScanning.View.Controls
+namespace _3DScan.View.Controls
 {
     /// <summary>
     /// Interaction logic for EditConfigControl.xaml

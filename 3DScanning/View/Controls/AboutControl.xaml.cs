@@ -11,7 +11,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace _3DScanning.View.Controls
+namespace _3DScan.View.Controls
 {
     /// <summary>
     /// Interaction logic for AboutControl.xaml

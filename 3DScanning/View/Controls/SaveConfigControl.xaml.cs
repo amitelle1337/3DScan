@@ -13,7 +13,7 @@ using System.Windows.Shapes;
 using Microsoft.Win32;
 using System.IO;
 
-namespace _3DScanning.View.Controls
+namespace _3DScan.View.Controls
 {
     /// <summary>
     /// Interaction logic for SaveConfigControl.xaml

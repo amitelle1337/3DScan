@@ -1,4 +1,4 @@
-﻿using _3DScanning.ViewModel;
+﻿using _3DScan.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace _3DScanning.View.Controls
+namespace _3DScan.View.Controls
 {
     /// <summary>
     /// Interaction logic for UserControlMenuItem.xaml

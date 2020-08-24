@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     /// <summary>
     /// Class <c>ScanManager</c> manages scanning, calibrating and synchronizing between cameras.

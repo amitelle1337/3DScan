@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using _3DScanning.Model;
+using _3DScan.Model;
 
-namespace _3DScanning.ViewModel
+namespace _3DScan.ViewModel
 {
     public class CamerasManagerVM
     {

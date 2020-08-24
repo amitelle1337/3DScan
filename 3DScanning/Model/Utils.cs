@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     public static class Utils
     {

@@ -1,7 +1,7 @@
 ﻿using Intel.RealSense;
 using System;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     /// <summary>
     /// Represents the technology the <c>Camera</c> uses.

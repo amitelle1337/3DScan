@@ -13,11 +13,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using _3DScanning.ViewModel;
-using _3DScanning.View.Controls;
-using _3DScanning.View;
+using _3DScan.ViewModel;
+using _3DScan.View.Controls;
+using _3DScan.View;
 
-namespace _3DScanning
+namespace _3DScan
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

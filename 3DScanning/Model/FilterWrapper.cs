@@ -1,6 +1,6 @@
 ﻿using Intel.RealSense;
 
-namespace _3DScanning.Model
+namespace _3DScan.Model
 {
     public abstract class FilterWrapper
     {
