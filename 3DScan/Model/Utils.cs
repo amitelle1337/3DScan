@@ -2,7 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace _3DScan.Model
 {
@@ -74,27 +77,29 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="filename">The name of the file to write.</param>
         /// <param name="vertices">The points to write to the file.</param>
-        public static void WriteXyz(string filename, IEnumerable<Vector3> vertices)
+        public static void WriteXYZ(string filename, IEnumerable<Vector3> vertices)
         {
-            using var writer = new StreamWriter(filename);
-            foreach (var v in vertices)
-            {
-                writer.WriteLine($"{v.X} {v.Y} {v.Z}");
-            }
+            WriteXYZAsync(filename, vertices).GetAwaiter().GetResult();
         }
 
         /// <summary>
-        /// Disposes each frame in <paramref name="frames"/>
+        /// An async version of <see cref="WriteXYZ(string, IEnumerable{Vector3})"/>.
         /// </summary>
-        /// <param name="frames">The frames to dispose.</param>
-        public static void DisposeAll(IEnumerable<Frame> frames)
+        /// <param name="filename">The name of the file to write.</param>
+        /// <param name="vertices">The points to write to the file.</param>
+        /// <returns></returns>
+        public static async Task WriteXYZAsync(string filename, IEnumerable<Vector3> vertices)
         {
-            // Append all frames to be dispose with the releaser and dispose them at once
-            using var releaser = new FramesReleaser();
-            foreach (var frame in frames)
+            using var writer = new StreamWriter(filename);
+
+            // The number of vectors is typically very large, waiting for each line to written wasteful, thus we use a string builder to build the string, and then write it.
+            // The recommended buffer size for a float is 16 byte, plus one extra byte for each float, times the number of floats
+            var builder = new StringBuilder(vertices.Count() * 3 * (16 + 1));
+            foreach (var v in vertices)
             {
-                frame.DisposeWith(releaser);
+                builder.AppendLine($"{v.X} {v.Y} {v.Z}");
             }
+            await writer.WriteAsync(builder).ConfigureAwait(false);
         }
 
         /// <summary>

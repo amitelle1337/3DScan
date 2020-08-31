@@ -137,7 +137,6 @@ namespace _3DScan.Model
             var config = new Config();
             config.EnableStream(Stream.Depth);
             config.EnableDevice(Serial);
-
             return config;
         }
 
@@ -164,12 +163,14 @@ namespace _3DScan.Model
         /// <summary>
         /// Captures a certain number of frames from this <c>Camera</c>.
         /// </summary>
-        /// <param name="framesNumber">The number of frames to capture.</param>
-        /// <param name="dummyFramesNumber">The number of dummy frames to capture. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</param>
+        /// <param name="framesNumber">The number of frames to capture. Default is <c>1</c>.</param>
+        /// <param name="dummyFramesNumber">The number of dummy frames to capture.
+        /// Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera. Default is <c>30</c>.</param>
+        /// <param name="keepFrames">Whether to call <c>Keep</c> on the frames so they won't count towards the ObjectPool. Default is <c>true</c>.</param>
         /// <returns>An array of frames, whom have been captured by this <c>Camera</c>. </returns>
         /// <remarks>The caller need to dispose the frames.</remarks>
         /// <seealso cref="CaptureFrame(int, int)"/>
-        public DepthFrame[] CaptureFrames(int framesNumber = 1, int dummyFramesNumber = 30)
+        public DepthFrame[] CaptureDepthFrames(int framesNumber = 1, int dummyFramesNumber = 30, bool keepFrames = true)
         {
             var config = GetDepthConfig();
             var pipe = new Pipeline();
@@ -189,6 +190,10 @@ namespace _3DScan.Model
                 {
                     using var frameset = pipe.WaitForFrames();
                     framesArr[i] = frameset.DepthFrame;
+                    if (keepFrames)
+                    {
+                        framesArr[i].Keep();
+                    }
                 }
 
                 return framesArr;
@@ -200,120 +205,39 @@ namespace _3DScan.Model
         }
 
         /// <summary>
-        /// Captures an average of frame from this <c>Camera</c>. (Capturing several frames and applying temporal filter).
-        /// </summary>
-        /// <param name="framesNumber">The number of frames to capture.</param>
-        /// <param name="dummyFramesNumber">The number of dummy frames to capture. Dummy frames are frames that are being captured but not saved in order to 'heat up' the camera.</param>
-        /// <returns>A of frame, whom has been the result of applying a temporal filter on frames that where capture by this <c>Camera</c>. </returns>
-        /// <seealso cref="CaptureFrames(int, int)"/>
-        /// <remarks>
-        /// The caller need to dispose the frame. <br>
-        /// Practically the same as the previous method, but uses temporal filter during capture to preserve memory and 'stop-the-world' pauses when disposing all frames at once.
-        /// </remarks>
-        /// 
-        public DepthFrame CaptureFrame(int framesNumber = 1, int dummyFramesNumber = 30)
-        {
-            var config = GetDepthConfig();
-            var pipe = new Pipeline();
-
-            var pp = pipe.Start(config);
-            try
-            {
-                for (var i = 0; i < dummyFramesNumber; ++i)
-                {
-                    using (var frames = pipe.WaitForFrames())
-                    using (var depth = frames.DepthFrame) ;
-                }
-                using var firstFrameset = pipe.WaitForFrames();
-                var frame = firstFrameset.DepthFrame;
-                using (var temporalFilter = new TemporalFilter())
-                {
-                    // Release temporary frames
-                    using var realeser = new FramesReleaser();
-
-                    for (var i = 0; i < framesNumber - 1; ++i)
-                    {
-                        if (i < framesNumber - 1)
-                        {
-                            frame.DisposeWith(realeser);
-                        }
-
-                        using var frameset = pipe.WaitForFrames();
-                        using var depth = frameset.DepthFrame;
-                        frame = temporalFilter.Process<DepthFrame>(depth);
-                    }
-
-                    return frame;
-                }
-
-            }
-            finally
-            {
-                pipe.Stop();
-            }
-        }
-
-        /// <summary>
-        /// Applies this camera's filters on the resulted frame after 'averaging' them with temporal filter.
+        /// Applies this camera's filters on <paramref name="frames"/>.
         /// </summary>
         /// <param name="frames">A collection of frames to 'average' and apply this camera's filters on.</param>
-        /// <returns>The outcome of applying a temporal filter on frames and then applying this camera's filters on the resulted frame.</returns>
+        /// <returns>The outcome of applying this camera's filters on <paramref name="frames"/>.</returns>
         /// <seealso cref="ApplyFilters(DepthFrame)"/>
         /// <remarks>The caller need to dispose the frame.</remarks>
         public DepthFrame ApplyFilters(IEnumerable<DepthFrame> frames)
         {
-            var res = frames.First(_ => true);
-            using (var tempFilter = new TemporalFilter())
-            {
-                // Release temporary frames
-                using var realeser = new FramesReleaser();
-
-                var i = 0;
-                foreach (var f in frames)
-                {
-                    res = tempFilter.Process<DepthFrame>(f);
-
-                    // Release each frame which is not the last
-                    if (i < frames.Count() - 1)
-                    {
-                        res.DisposeWith(realeser);
-                    }
-
-                    ++i;
-                }
-
-                return ApplyFilters(res);
-            }
-        }
-
-        /// <summary>
-        /// Applies this camera's filters on the frame.
-        /// </summary>
-        /// <param name="frame">A frame to apply this camera's filters on.</param>
-        /// <returns>The outcome of applying this camera's filters on the frame.</returns>
-        /// <seealso cref="ApplyFilters(IEnumerable{DepthFrame})"/>
-        /// <remarks>The caller need to dispose the frame.</remarks>
-        public DepthFrame ApplyFilters(DepthFrame frame)
-        {
-            var res = frame.Clone().As<DepthFrame>();
 
             var filters = GetOnFiltersInOrder();
 
             var i = 0;
-            foreach (var filter in filters)
+            var j = 0;
+            var curr = frames.FirstOrDefault();
+            var prev = curr;
+            foreach (var frame in frames)
             {
-                res = filter.Process<DepthFrame>(res);
-
-                // Release each frame which is not the last
-                if (i < filters.Count() - 1)
+                j = 0;
+                curr = frame.Clone().As<DepthFrame>();
+                foreach (var filter in filters)
                 {
-                    res.Dispose();
+                    prev = curr;
+                    curr = filter.Process<DepthFrame>(prev);
+
+                    prev.Dispose();
+                    ++j;
                 }
-                filter.Dispose();
                 ++i;
             }
 
-            return res;
+            filters.ForEach(f => f.Dispose());
+
+            return curr;
         }
 
         /// <summary>
@@ -328,7 +252,11 @@ namespace _3DScan.Model
             Utils.RotateAroundYAxisInPlace(vertices, Angle);
         }
 
-
+        /// <summary>
+        /// Finds the angle where the 2 cameras FOVs meets, measured from 0,0 in relation to this camera.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>The angle that separates the 2 cameras FOVs.</returns>
         public double FindCriticalAngle(Camera other)
         {
             var halfPi = Math.PI / 2;
@@ -341,7 +269,7 @@ namespace _3DScan.Model
             var x = (d2 * Math.Sin(fov2) / Math.Sin(deltaAngle + fov2) - d1) / (Utils.Cot(fov1) - Math.Tan(halfPi + deltaAngle + fov2));
             var z = Utils.Cot(fov1) * x + d1;
 
-            return Math.Atan(z / x);
+            return Utils.ToDegrees(Math.Atan(z / x));
         }
     }
 }

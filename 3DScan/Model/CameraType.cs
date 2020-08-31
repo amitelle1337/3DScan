@@ -46,7 +46,7 @@ namespace _3DScan.Model
                 {
                     if (device.Info.GetInfo(CameraInfo.SerialNumber) != serial) continue;
 
-                    return CameraNameToCameraType(device.Info.GetInfo(CameraInfo.Name));
+                    return CameraNameToCameraType(device.Info[CameraInfo.Name]);
                 }
             }
 
@@ -65,7 +65,7 @@ namespace _3DScan.Model
                 case "Intel RealSense D415":
                 case "Intel RealSense D435":
                 case "Intel RealSense D435I":
-                case "Intel RealSense D4355":
+                case "Intel RealSense D455":
                     return CameraType.Sereo_Depth;
                 case "Intel RealSense L515":
                     return CameraType.LiDAR;
