@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
+using System.Diagnostics;
 
 namespace _3DScan.Model
 {
@@ -18,7 +19,7 @@ namespace _3DScan.Model
     public class ScanManager
     {
         /// <value>The cameras that the manger can operate on.</value>
-        public IList<Camera> Cameras { get; set; }
+        public List<Camera> Cameras { get; set; }
 
         /// <value>The number of frames to capture from each camera when capturing.</value>
         public int FramesNumber { get; set; }
@@ -127,6 +128,9 @@ namespace _3DScan.Model
             // This way we get maximum performance, rather than capturing simultaneously and 'waisting' time.
             var acde = new AsyncCountdownEvent(depthCams.Count);
 
+            var s = new Stopwatch();
+            s.Start();
+            Console.WriteLine("Start Capturing");
             foreach (var dcam in depthCams)
             {
                 tasks[idx++] = Task.Run(() =>
@@ -146,6 +150,8 @@ namespace _3DScan.Model
                 var frames = lcam.CaptureDepthFrames(FramesNumber, DummyFramesNumber);
                 tasks[idx++] = Task.Run(() => func(lcam, frames));
             }
+            s.Stop();
+            Console.WriteLine($"Finished Capturing {s.Elapsed}");
 
             // ConfigureAwait(false) because the context does not matter.
             return await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -160,39 +166,44 @@ namespace _3DScan.Model
         {
             var pointcloud = new List<Vector3>();
 
-            var pcCams = ScanToFunction((cam, frames) =>
+            var onCams = Cameras.Where(c => c.On).ToList();
+            onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
+
+            // ConfigureAwait(false) because the context does not matter.
+            var pcs = ScanToFunction((cam, frames) =>
             {
                 var filteredFrame = cam.ApplyFilters(frames);
                 frames.ToList().ForEach(f => f.Dispose());
                 var pc = Utils.FrameToPointCloud(filteredFrame);
                 filteredFrame.Dispose();
-                cam.AdjustAndRotateInPlace(pc);
 
-                return (cam, pc);
-            }).ToList();
+                cam.AdjustInPlace(pc);
 
-            pcCams.Sort((o1, o2) => o1.cam.Angle.CompareTo(o2.cam.Angle));
+                var i = onCams.FindIndex(c => c.Angle == cam.Angle);
+                var before = i != 0 ? onCams[i - 1] : onCams[onCams.Count - 1];
+                var after = i != onCams.Count - 1 ? onCams[i + 1] : onCams[0];
 
-            foreach (var pcCam in pcCams)
-            {
-                var i = pcCams.FindIndex(o => o.cam.Angle == pcCam.cam.Angle);
-                var before = i != 0 ? pcCams[i - 1] : pcCams[pcCams.Count - 1];
-                var after = i != pcCams.Count - 1 ? pcCams[i + 1] : pcCams[0];
-
-                var lowerBound = pcCam.cam.FindCriticalAngle(before.cam);
-                var upperBound = pcCam.cam.FindCriticalAngle(before.cam);
+                var lowerBound = cam.FindCriticalAngle(before);
+                var upperBound = cam.FindCriticalAngle(after);
 
                 lowerBound = lowerBound < 0 ? lowerBound : -Math.PI / 2;
                 upperBound = upperBound > 0 ? upperBound : Math.PI / 2;
 
-                var filtered = pcCam.pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound);
+                pc = pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound).ToList();
 
-                pointcloud.AddRange(filtered);
+                cam.RotateInPlace(pc);
+
+                return pc;
+            }).ToList();
+
+
+            foreach (var pc in pcs)
+            {
+                pointcloud.AddRange(pc);
             }
 
             return pointcloud;
         }
-
 
         /// <summary>
         /// An async version of <see cref="ScanObject"/>.
@@ -202,35 +213,40 @@ namespace _3DScan.Model
         {
             var pointcloud = new List<Vector3>();
 
+            var onCams = Cameras.Where(c => c.On).ToList();
+            onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
+
             // ConfigureAwait(false) because the context does not matter.
-            var pcCams = (await ScanToFunctionAsync((cam, frames) =>
+            var pcs = (await ScanToFunctionAsync((cam, frames) =>
             {
                 var filteredFrame = cam.ApplyFilters(frames);
                 frames.ToList().ForEach(f => f.Dispose());
                 var pc = Utils.FrameToPointCloud(filteredFrame);
                 filteredFrame.Dispose();
-                cam.AdjustAndRotateInPlace(pc);
 
-                return (cam, pc);
-            }).ConfigureAwait(false)).ToList();
+                cam.AdjustInPlace(pc);
 
-            pcCams.Sort((o1, o2) => o1.cam.Angle.CompareTo(o2.cam.Angle));
+                var i = onCams.FindIndex(c => c.Angle == cam.Angle);
+                var before = i != 0 ? onCams[i - 1] : onCams[onCams.Count - 1];
+                var after = i != onCams.Count - 1 ? onCams[i + 1] : onCams[0];
 
-            foreach (var pcCam in pcCams)
-            {
-                var i = pcCams.FindIndex(o => o.cam.Angle == pcCam.cam.Angle);
-                var before = i != 0 ? pcCams[i - 1] : pcCams[pcCams.Count - 1];
-                var after = i != pcCams.Count - 1 ? pcCams[i + 1] : pcCams[0];
-
-                var lowerBound = pcCam.cam.FindCriticalAngle(before.cam);
-                var upperBound = pcCam.cam.FindCriticalAngle(before.cam);
+                var lowerBound = cam.FindCriticalAngle(before);
+                var upperBound = cam.FindCriticalAngle(after);
 
                 lowerBound = lowerBound < 0 ? lowerBound : -Math.PI / 2;
                 upperBound = upperBound > 0 ? upperBound : Math.PI / 2;
 
-                var filtered = pcCam.pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound);
+                pc = pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound).ToList();
 
-                pointcloud.AddRange(filtered);
+                cam.RotateInPlace(pc);
+
+                return pc;
+            }).ConfigureAwait(false)).ToList();
+
+
+            foreach (var pc in pcs)
+            {
+                pointcloud.AddRange(pc);
             }
 
             return pointcloud;

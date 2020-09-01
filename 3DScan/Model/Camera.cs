@@ -56,11 +56,11 @@ namespace _3DScan.Model
         /// </value>
         [JsonConverter(typeof(Vector3Converter))] public Vector3 PositionDeviation { get; set; }
 
-        public DecimationFilterWarpper DecimationWrapper { get; private set; }
-        public SpatialFilterWarpper SpatialWrapper { get; private set; }
-        public TemporalFilterWrapper TemporalWrapper { get; private set; }
-        public HoleFillingFilterWrapper HoleFillingWrapper { get; private set; }
-        public ThresholdFilterWrapper ThresholdWrapper { get; private set; }
+        public DecimationFilterWarpper DecimationWrapper { get; set; }
+        public SpatialFilterWarpper SpatialWrapper { get; set; }
+        public TemporalFilterWrapper TemporalWrapper { get; set; }
+        public HoleFillingFilterWrapper HoleFillingWrapper { get; set; }
+        public ThresholdFilterWrapper ThresholdWrapper { get; set; }
 
         /// <value>
         /// Whether the camera is on or off.
@@ -102,7 +102,7 @@ namespace _3DScan.Model
         /// This method returns the custom wrappers in that order.
         /// </summary>
         /// <returns>The filter wrappers in the recommended order of activation.</returns>
-        public FilterWrapper[] GetWrapperInOrder()
+        public FilterWrapper[] GetWrappersInOrder()
         {
             return new FilterWrapper[] { DecimationWrapper, SpatialWrapper, TemporalWrapper, HoleFillingWrapper, ThresholdWrapper };
         }
@@ -117,7 +117,7 @@ namespace _3DScan.Model
         {
             var blocks = new List<ProcessingBlock>();
 
-            foreach (var wrapper in GetWrapperInOrder())
+            foreach (var wrapper in GetWrappersInOrder())
             {
                 if (wrapper.On)
                 {
@@ -252,6 +252,18 @@ namespace _3DScan.Model
             Utils.RotateAroundYAxisInPlace(vertices, Angle);
         }
 
+        public void AdjustInPlace(List<Vector3> vertices)
+        {
+            Utils.ChangeCoordinatesInPlace(vertices,
+                v => new Vector3(-(v.X + PositionDeviation.X), -(v.Y + PositionDeviation.Y), PositionDeviation.Z - v.Z));
+
+        }
+
+        public void RotateInPlace(List<Vector3> vertices)
+        {
+            Utils.RotateAroundYAxisInPlace(vertices, Angle);
+        }
+
         /// <summary>
         /// Finds the angle where the 2 cameras FOVs meets, measured from 0,0 in relation to this camera.
         /// </summary>
@@ -261,9 +273,9 @@ namespace _3DScan.Model
         {
             var halfPi = Math.PI / 2;
             var d1 = PositionDeviation.Z;
-            var fov1 = Utils.ToRadians(FOV.X);
+            var fov1 = Utils.ToRadians(FOV.X / 2);
             var d2 = other.PositionDeviation.Z;
-            var fov2 = Utils.ToRadians(other.FOV.X);
+            var fov2 = Utils.ToRadians(other.FOV.X / 2);
             var deltaAngle = Utils.ToRadians(Angle - other.Angle);
 
             var x = (d2 * Math.Sin(fov2) / Math.Sin(deltaAngle + fov2) - d1) / (Utils.Cot(fov1) - Math.Tan(halfPi + deltaAngle + fov2));
