@@ -18,7 +18,7 @@ namespace _3DScan.Model
         /// <value>
         /// The serial number of the <c>Camera</c>.
         /// </value>
-        /// <remarks>The value of <c>Type</c> and <c>vFOV</c> is automatically updated when this value is changed.</remarks>
+        /// <remarks>The value of <c>Type</c> and <c>vFOV</c> is automatically updated (lazily) when this value is changed.</remarks>
         /// <seealso cref="Type"/>
         /// <seealso cref="FOV"/>
         public string Serial
@@ -27,29 +27,59 @@ namespace _3DScan.Model
             set
             {
                 _serial = value;
-                Type = CameraTypeFunctions.QuarryCameraType(_serial);
-                var intrinsics = GetDepthIntrinsics();
-                FOV = new Vector2(intrinsics.FOV[0], intrinsics.FOV[1]);
+                _type = null;
+                _fov = null;
             }
         }
 
         /// <value>
-        /// The angle that the <c>Camera</c> is rotated around the middle point of the object, measured counterclockwise.
+        /// The angle that the <c>Camera</c> is rotated around the middle point of the object, measured clockwise.
         /// </value>
         public float Angle { get; set; }
+
+        private Vector2? _fov;
 
         /// <value>
         /// The field of view of the camera, measured in degrees.
         /// </value>
-        /// <remarks>This value automatically updated then the <c>Serial</c> is changed.</remarks>
+        /// <remarks>This value automatically updated (lazily) then the <c>Serial</c> is changed.</remarks>
         /// <seealso cref="Serial"/>
-        [JsonIgnore] public Vector2 FOV { get; private set; }
+        [JsonIgnore]
+        public Vector2 FOV
+        {
+            get
+            {
+                if (!_fov.HasValue)
+                {
+                    var intrinsics = GetDepthIntrinsics();
+                    _fov = new Vector2(intrinsics.FOV[0], intrinsics.FOV[1]);
+                }
+
+                return _fov.Value;
+
+            }
+            private set => _fov = value;
+        }
+
+        private CameraType? _type;
 
         /// <value>The type of the <c>Camera</c>, according to it's technology.</value>
-        /// <remarks>This value automatically updated then the <c>Serial</c> is changed.</remarks>
+        /// <remarks>This value automatically updated (lazily) then the <c>Serial</c> is changed.</remarks>
         /// <seealso cref="CameraType"/>
         /// <seealso cref="Serial"/>
-        [JsonIgnore] public CameraType Type { get; private set; }
+        [JsonIgnore]
+        public CameraType Type
+        {
+            get
+            {
+                if (_type.HasValue)
+                {
+                    _type = CameraTypeFunctions.QuarryCameraType(Serial);
+                }
+                return _type.Value;
+            }
+            private set => _type = value;
+        }
 
         /// <value>
         /// The deviation of the <c>Camera</c> in (x,y,z) from the middle point of the object.
@@ -81,7 +111,7 @@ namespace _3DScan.Model
         /// This constructor initializes a new <c>Camera</c> with serial number, <paramref name="serial"/>.
         /// </summary>
         /// <param name="serial">The serial number of the <c>Camera</c>. Mandatory parameter.</param>
-        /// <param name="angle">The angle of the <c>Camera</c>, measured counterclockwise. Optional parameter, default is 0.</param>
+        /// <param name="angle">The angle of the <c>Camera</c>, measured clockwise. Optional parameter, default is 0.</param>
         /// <param name="posDev">The position deviation of the <c>Camera</c> from (0,0,0). Optional parameter, default is (0,0,0).</param>
         /// <param name="on">Whether the <c>Camera</c> is on/off. Optional parameter, default is true.</param>
         public Camera(string serial, float angle = default, Vector3 posDev = default, bool on = true)
@@ -241,17 +271,22 @@ namespace _3DScan.Model
         }
 
         /// <summary>
-        /// Adjust a point-cloud with this camera's deviations, then rotates the point-cloud by this camera's angle.
+        /// Adjust a point-cloud with this camera's deviations,
+        /// changes to origin point to be relative to the center of the object (rather than relative to the camera),
+        /// then rotates the point-cloud by this camera's angle.
         /// </summary>
         /// <param name="vertices">A point-cloud to apply this transformation on.</param>
         public void AdjustAndRotateInPlace(List<Vector3> vertices)
         {
-            Utils.ChangeCoordinatesInPlace(vertices,
-                v => new Vector3(-(v.X + PositionDeviation.X), -(v.Y + PositionDeviation.Y), PositionDeviation.Z - v.Z));
-
-            Utils.RotateAroundYAxisInPlace(vertices, Angle);
+            AdjustInPlace(vertices);
+            RotateInPlace(vertices);
         }
 
+        /// <summary>
+        /// Adjust a point-cloud with this camera's deviations,
+        /// changes to origin point to be relative to the center of the object (rather than relative to the camera)
+        /// </summary>
+        /// <param name="vertices">>A point-cloud to apply this transformation on.</param>
         public void AdjustInPlace(List<Vector3> vertices)
         {
             Utils.ChangeCoordinatesInPlace(vertices,
@@ -259,6 +294,10 @@ namespace _3DScan.Model
 
         }
 
+        /// <summary>
+        /// Rotates the point-cloud by this camera's angle.
+        /// </summary>
+        /// <param name="vertices">>A point-cloud to apply this transformation on.</param>
         public void RotateInPlace(List<Vector3> vertices)
         {
             Utils.RotateAroundYAxisInPlace(vertices, Angle);

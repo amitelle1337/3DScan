@@ -12,6 +12,8 @@ namespace _3DScan.Model
     {
         public int FilterMagnitude { get; set; }
 
+        public DecimationFilterWarpper() : this(2) { }
+
         public DecimationFilterWarpper(int filterMagnitude = 2)
         {
             FilterMagnitude = filterMagnitude;
@@ -31,6 +33,8 @@ namespace _3DScan.Model
         public float FilterSmoothAlpha { get; set; }
         public int FilterSmoothDelta { get; set; }
         public int HolesFill { get; set; }
+
+        public SpatialFilterWarpper() : this(2, 0.5f, 20, 0) { }
 
         public SpatialFilterWarpper(int filterMagnitude = 2, float filterSmoothAlpha = 0.5f, int filterSmoothDelta = 20, int holesFill = 0)
         {
@@ -56,6 +60,8 @@ namespace _3DScan.Model
         public float FilterSmoothAlpha { get; set; }
         public int FilterSmoothDelta { get; set; }
 
+        public TemporalFilterWrapper() : this(0.4f, 20) { }
+
         public TemporalFilterWrapper(float filterSmoothAlpha = 0.4f, int filterSmoothDelta = 20)
         {
             FilterSmoothAlpha = filterSmoothAlpha;
@@ -75,6 +81,8 @@ namespace _3DScan.Model
     {
         public int HolesFill { get; set; }
 
+        public HoleFillingFilterWrapper() : this(1) { }
+
         public HoleFillingFilterWrapper(int holesFill = 1)
         {
             HolesFill = holesFill;
@@ -91,6 +99,8 @@ namespace _3DScan.Model
     {
         public float MinDistance { get; set; }
         public float MaxDistance { get; set; }
+
+        public ThresholdFilterWrapper() : this(0.1f, 4) { }
 
         public ThresholdFilterWrapper(float minDistance = 0.1f, float maxDistance = 4)
         {

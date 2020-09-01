@@ -1,5 +1,6 @@
 ﻿using Intel.RealSense;
 using System;
+using System.Collections.Generic;
 
 namespace _3DScan.Model
 {
@@ -32,6 +33,8 @@ namespace _3DScan.Model
     /// </summary>
     public static class CameraTypeFunctions
     {
+        private static Dictionary<string, CameraType> _cache = new Dictionary<string, CameraType>();
+
         /// <summary>
         /// Finds the <c>CameraType</c> of a device with serial number <paramref name="serial"/>.
         /// </summary>
@@ -39,18 +42,25 @@ namespace _3DScan.Model
         /// <returns>The <c>CameraType</c> of the device. If no device found throws exception.</returns>
         public static CameraType QuarryCameraType(string serial)
         {
-            using (var ctx = new Context())
+            if (!_cache.ContainsKey(serial))
             {
-                var devices = ctx.QueryDevices();
-                foreach (var device in devices)
+                var found = false;
+                using (var ctx = new Context())
                 {
-                    if (device.Info.GetInfo(CameraInfo.SerialNumber) != serial) continue;
+                    var devices = ctx.QueryDevices();
+                    foreach (var device in devices)
+                    {
+                        _cache.Add(device.Info[CameraInfo.SerialNumber], CameraNameToCameraType(device.Info[CameraInfo.Name]));
+                    }
+                }
 
-                    return CameraNameToCameraType(device.Info[CameraInfo.Name]);
+                if (!found)
+                {
+                    throw new Exception($"The device with serial number {serial} is not connected");
                 }
             }
 
-            throw new Exception($"The device with serial number {serial} is not connected");
+            return _cache[serial];
         }
 
         /// <summary>

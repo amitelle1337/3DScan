@@ -56,9 +56,21 @@ namespace _3DScan.Model
         /// <param name="ctx">The context to query the cameras from.</param>
         public ScanManager(Context ctx) : this()
         {
+            UpdateCameras(ctx);
+        }
+
+        /// <summary>
+        /// Updates the cameras list with the cameras found in <paramref name="ctx"/>.
+        /// </summary>
+        /// <param name="ctx">The context to query the cameras from.</param>
+        public void UpdateCameras(Context ctx)
+        {
             foreach (var device in ctx.QueryDevices())
             {
-                Cameras.Add(new Camera(device.Info.GetInfo(CameraInfo.SerialNumber)));
+                var serial = device.Info.GetInfo(CameraInfo.SerialNumber);
+                if (Cameras.Exists(c => c.Serial == serial)) continue;
+
+                Cameras.Add(new Camera(serial));
             }
         }
 
@@ -128,9 +140,6 @@ namespace _3DScan.Model
             // This way we get maximum performance, rather than capturing simultaneously and 'waisting' time.
             var acde = new AsyncCountdownEvent(depthCams.Count);
 
-            var s = new Stopwatch();
-            s.Start();
-            Console.WriteLine("Start Capturing");
             foreach (var dcam in depthCams)
             {
                 tasks[idx++] = Task.Run(() =>
@@ -150,8 +159,6 @@ namespace _3DScan.Model
                 var frames = lcam.CaptureDepthFrames(FramesNumber, DummyFramesNumber);
                 tasks[idx++] = Task.Run(() => func(lcam, frames));
             }
-            s.Stop();
-            Console.WriteLine($"Finished Capturing {s.Elapsed}");
 
             // ConfigureAwait(false) because the context does not matter.
             return await Task.WhenAll(tasks).ConfigureAwait(false);
