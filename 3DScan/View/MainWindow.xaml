@@ -1,0 +1,36 @@
+﻿<Window x:Class="_3DScan.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="540" Width="960" WindowStartupLocation="CenterScreen"
+        Background="#FBFBFF">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="10*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="#3891A6"/>
+
+        <Viewbox Stretch="Uniform" Grid.Row="1" Grid.Column="0" Margin="5 5">
+            <TextBlock Text="3DScan" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#698F3F"/>
+        </Viewbox>
+
+        <Grid Grid.Column="0" Grid.Row="2" Background="#3891A6">
+            <ScrollViewer HorizontalAlignment="Right" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Row="1">
+                <StackPanel x:Name="Menu" Margin="10"/>
+            </ScrollViewer>
+        </Grid>
+
+        <Grid x:Name="MainPage" Grid.Column="1" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+
+        <!--<Frame x:Name="MainFrame" Grid.Column="1" Grid.Row="2" Source="EditConfigView.xaml"/>-->
+    </Grid>
+</Window>
