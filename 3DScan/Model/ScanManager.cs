@@ -177,32 +177,7 @@ namespace _3DScan.Model
             onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
 
             // ConfigureAwait(false) because the context does not matter.
-            var pcs = ScanToFunction((cam, frames) =>
-            {
-                var filteredFrame = cam.ApplyFilters(frames);
-                frames.ToList().ForEach(f => f.Dispose());
-                var pc = Utils.FrameToPointCloud(filteredFrame);
-                filteredFrame.Dispose();
-
-                cam.AdjustInPlace(pc);
-
-                var i = onCams.FindIndex(c => c.Angle == cam.Angle);
-                var before = i != 0 ? onCams[i - 1] : onCams[onCams.Count - 1];
-                var after = i != onCams.Count - 1 ? onCams[i + 1] : onCams[0];
-
-                var lowerBound = cam.FindCriticalAngle(before);
-                var upperBound = cam.FindCriticalAngle(after);
-
-                lowerBound = lowerBound < 0 ? lowerBound : -Math.PI / 2;
-                upperBound = upperBound > 0 ? upperBound : Math.PI / 2;
-
-                pc = pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound).ToList();
-
-                cam.RotateInPlace(pc);
-
-                return pc;
-            }).ToList();
-
+            var pcs = ScanToFunction(ProcessPCFunc()).ToList();
 
             foreach (var pc in pcs)
             {
@@ -224,7 +199,28 @@ namespace _3DScan.Model
             onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
 
             // ConfigureAwait(false) because the context does not matter.
-            var pcs = (await ScanToFunctionAsync((cam, frames) =>
+            var pcs = (await ScanToFunctionAsync(ProcessPCFunc()).ConfigureAwait(false)).ToList();
+
+            foreach (var pc in pcs)
+            {
+                pointcloud.AddRange(pc);
+            }
+
+            return pointcloud;
+        }
+
+        /// <summary>
+        /// Returns the processing function to use after scanning.
+        /// </summary>
+        /// <returns>the processing function to use after scanning.</returns>
+        /// <see cref="ScanObject"/>
+        /// <see cref="ScanObjectAsync"/>
+        private Func<Camera, DepthFrame[], List<Vector3>> ProcessPCFunc()
+        {
+            var onCams = Cameras.Where(c => c.On).ToList();
+            onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
+
+            return (cam, frames) =>
             {
                 var filteredFrame = cam.ApplyFilters(frames);
                 frames.ToList().ForEach(f => f.Dispose());
@@ -240,23 +236,15 @@ namespace _3DScan.Model
                 var lowerBound = cam.FindCriticalAngle(before);
                 var upperBound = cam.FindCriticalAngle(after);
 
-                lowerBound = lowerBound < 0 ? lowerBound : -Math.PI / 2;
-                upperBound = upperBound > 0 ? upperBound : Math.PI / 2;
+                lowerBound = lowerBound < 0 ? lowerBound : -MathF.PI / 2;
+                upperBound = upperBound > 0 ? upperBound : MathF.PI / 2;
 
-                pc = pc.Where(v => lowerBound <= Math.Tan(v.Z / v.X) && Math.Tan(v.Z / v.X) <= upperBound).ToList();
+                pc = pc.Where(v => lowerBound <= MathF.Tan(v.Z / v.X) && MathF.Tan(v.Z / v.X) <= upperBound).ToList();
 
                 cam.RotateInPlace(pc);
 
                 return pc;
-            }).ConfigureAwait(false)).ToList();
-
-
-            foreach (var pc in pcs)
-            {
-                pointcloud.AddRange(pc);
-            }
-
-            return pointcloud;
+            };
         }
 
         /// <summary>
