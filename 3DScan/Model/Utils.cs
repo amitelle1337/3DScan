@@ -52,7 +52,7 @@ namespace _3DScan.Model
         }
 
         /// <summary>
-        /// Rotates a point-cloud around the y axis <paramref name="angle"/> degrees.
+        /// Rotates a point-cloud around the y axis <paramref name="angle"/> degrees counter-clockwise.
         /// </summary>
         /// <param name="vertices">The list of vectors to rotated around the y axis.</param>
         /// <param name="angle">The angle, measured in degrees.</param>
@@ -60,9 +60,9 @@ namespace _3DScan.Model
         {
             var radAngle = ToRadians(angle);
             var rotationMatrix = new Matrix4x4(
-                (float)Math.Cos(radAngle), 0, -(float)Math.Sin(radAngle), 0,
+                (float)Math.Cos(radAngle), 0, (float)Math.Sin(radAngle), 0,
                 0, 1, 0, 0,
-                (float)Math.Sin(radAngle), 0, (float)Math.Cos(radAngle), 0,
+                -(float)Math.Sin(radAngle), 0, (float)Math.Cos(radAngle), 0,
                 0, 0, 0, 1
             );
 

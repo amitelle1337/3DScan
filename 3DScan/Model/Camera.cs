@@ -33,7 +33,7 @@ namespace _3DScan.Model
         }
 
         /// <value>
-        /// The angle that the <c>Camera</c> is rotated around the middle point of the object, measured clockwise.
+        /// The angle that the <c>Camera</c> is rotated around the middle point of the object, measured counter-clockwise.
         /// </value>
         public float Angle { get; set; }
 
@@ -111,7 +111,7 @@ namespace _3DScan.Model
         /// This constructor initializes a new <c>Camera</c> with serial number, <paramref name="serial"/>.
         /// </summary>
         /// <param name="serial">The serial number of the <c>Camera</c>. Mandatory parameter.</param>
-        /// <param name="angle">The angle of the <c>Camera</c>, measured clockwise. Optional parameter, default is 0.</param>
+        /// <param name="angle">The angle of the <c>Camera</c>, measured counter-clockwise. Optional parameter, default is 0.</param>
         /// <param name="posDev">The position deviation of the <c>Camera</c> from (0,0,0). Optional parameter, default is (0,0,0).</param>
         /// <param name="on">Whether the <c>Camera</c> is on/off. Optional parameter, default is true.</param>
         public Camera(string serial, float angle = default, Vector3 posDev = default, bool on = true)
