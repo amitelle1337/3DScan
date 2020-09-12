@@ -308,19 +308,19 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="other"></param>
         /// <returns>The angle that separates the 2 cameras FOVs.</returns>
-        public double FindCriticalAngle(Camera other)
+        public float FindCriticalAngle(Camera other)
         {
-            var halfPi = Math.PI / 2;
+            var halfPi = MathF.PI / 2;
             var d1 = PositionDeviation.Z;
             var fov1 = Utils.ToRadians(FOV.X / 2);
             var d2 = other.PositionDeviation.Z;
             var fov2 = Utils.ToRadians(other.FOV.X / 2);
             var deltaAngle = Utils.ToRadians(Angle - other.Angle);
 
-            var x = (d2 * Math.Sin(fov2) / Math.Sin(deltaAngle + fov2) - d1) / (Utils.Cot(fov1) - Math.Tan(halfPi + deltaAngle + fov2));
+            var x = (d2 * MathF.Sin(fov2) / MathF.Sin(deltaAngle + fov2) - d1) / (Utils.Cot(fov1) - MathF.Tan(halfPi + deltaAngle + fov2));
             var z = Utils.Cot(fov1) * x + d1;
 
-            return Utils.ToDegrees(Math.Atan(z / x));
+            return Utils.ToDegrees(MathF.Atan(z / x));
         }
     }
 }

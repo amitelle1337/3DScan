@@ -56,13 +56,13 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="vertices">The list of vectors to rotated around the y axis.</param>
         /// <param name="angle">The angle, measured in degrees.</param>
-        public static void RotateAroundYAxisInPlace(List<Vector3> vertices, double angle)
+        public static void RotateAroundYAxisInPlace(List<Vector3> vertices, float angle)
         {
             var radAngle = ToRadians(angle);
             var rotationMatrix = new Matrix4x4(
-                (float)Math.Cos(radAngle), 0, (float)Math.Sin(radAngle), 0,
+                MathF.Cos(radAngle), 0, MathF.Sin(radAngle), 0,
                 0, 1, 0, 0,
-                -(float)Math.Sin(radAngle), 0, (float)Math.Cos(radAngle), 0,
+                -MathF.Sin(radAngle), 0, MathF.Cos(radAngle), 0,
                 0, 0, 0, 1
             );
 
@@ -127,9 +127,9 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="angle">The angle, measured in degrees.</param>
         /// <returns>The <paramref name="angle"/> in radians.</returns>
-        public static double ToRadians(double angle)
+        public static float ToRadians(float angle)
         {
-            return (Math.PI / 180) * angle;
+            return (MathF.PI / 180) * angle;
         }
 
         /// <summary>
@@ -137,9 +137,9 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="angle">The angle, measured in radians.</param>
         /// <returns>The <paramref name="angle"/> in degrees.</returns>
-        public static double ToDegrees(double angle)
+        public static float ToDegrees(float angle)
         {
-            return (180 / Math.PI) * angle;
+            return (180 / MathF.PI) * angle;
         }
 
         /// <summary>
@@ -147,9 +147,9 @@ namespace _3DScan.Model
         /// </summary>
         /// <param name="angle">The angle, measured in radians.</param>
         /// <returns>The cotangent of <paramref name="angle"/>.</returns>
-        public static double Cot(double angle)
+        public static float Cot(float angle)
         {
-            return 1 / Math.Tan(angle);
+            return 1 / MathF.Tan(angle);
         }
 
     }
