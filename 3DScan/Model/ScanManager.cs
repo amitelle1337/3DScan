@@ -173,9 +173,6 @@ namespace _3DScan.Model
         {
             var pointcloud = new List<Vector3>();
 
-            var onCams = Cameras.Where(c => c.On).ToList();
-            onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
-
             // ConfigureAwait(false) because the context does not matter.
             var pcs = ScanToFunction(ProcessPCFunc()).ToList();
 
@@ -194,9 +191,6 @@ namespace _3DScan.Model
         public async Task<List<Vector3>> ScanObjectAsync()
         {
             var pointcloud = new List<Vector3>();
-
-            var onCams = Cameras.Where(c => c.On).ToList();
-            onCams.Sort((c1, c2) => c1.Angle.CompareTo(c2.Angle));
 
             // ConfigureAwait(false) because the context does not matter.
             var pcs = (await ScanToFunctionAsync(ProcessPCFunc()).ConfigureAwait(false)).ToList();
