@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:_3DScan.View.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Width="200" Height="150" Margin="5" GotFocus="Grid_GotFocus" LostFocus="Grid_LostFocus">
+    <Grid MinHeight="150" MinWidth="200" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5" GotFocus="Grid_GotFocus" LostFocus="Grid_LostFocus">
         <Border x:Name="OuterBrush" BorderBrush="gray" BorderThickness="2" CornerRadius="8 8 8 8">
             <Grid>
                 <Grid.RowDefinitions>
@@ -16,8 +16,10 @@
                 <TextBlock Text="{Binding Path=Serial, StringFormat='SN: {0}'}" Foreground="Gray" FontSize="10" 
                            VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="0"/>
 
-                <ToggleButton Style="{DynamicResource MaterialDesignSwitchToggleButton}" Background="#BD8B9C" 
-                          VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1"/>
+                <Canvas x:Name="container" Grid.Row="1" Width="200" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                <!--<ToggleButton Style="{DynamicResource MaterialDesignSwitchToggleButton}" Background="#BD8B9C" 
+                          VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1"/> -->
             </Grid>
         </Border>
             

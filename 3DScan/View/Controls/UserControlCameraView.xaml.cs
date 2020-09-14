@@ -23,6 +23,7 @@ namespace _3DScan.View.Controls
         {
             InitializeComponent();
             this.DataContext = cam;
+            container.Children.Add(new UserControlLiveStream(cam.Serial));
         }
 
         private void Grid_GotFocus(object sender, RoutedEventArgs e)

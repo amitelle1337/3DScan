@@ -6,7 +6,9 @@
              xmlns:local="clr-namespace:_3DScan.View.Controls"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d">
+
     <Grid Margin="10" Width="250" GotFocus="Grid_GotFocus" LostFocus="Grid_LostFocus">
+
         <Border x:Name="OuterBrush" BorderBrush="gray" BorderThickness="2" CornerRadius="8 8 8 8">
             <Grid Margin="5">
                 <Grid.ColumnDefinitions>
@@ -19,9 +21,26 @@
                     <RowDefinition/>
                     <RowDefinition/>
                     <RowDefinition/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="{Binding Path=Serial, StringFormat='SN: {0}'}" Grid.ColumnSpan="2" FontSize="10" 
+                <Grid.Resources>
+                    <DataTemplate x:Key="titleText" >
+                        <TextBlock Text="{Binding}" 
+                        Margin="4 0"
+                        VerticalAlignment="Center"
+                        Foreground="Gray"
+                        FontSize="6" 
+                        FontWeight="Normal"
+                        TextWrapping="Wrap"/>
+                       </DataTemplate>
+
+                    <Style TargetType="{x:Type Expander}">
+                        <Setter Property="HeaderTemplate" Value="{StaticResource titleText}"/>
+                    </Style>
+                </Grid.Resources>
+
+                <TextBlock Text="{Binding Path=Serial, StringFormat='Serial: {0}'}" Grid.ColumnSpan="2" FontSize="10" 
                            Foreground="Gray" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
                 <TextBlock Text="On: " Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" FontSize="12"/>
@@ -41,11 +60,17 @@
                 <TextBlock Text="Filters: " Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" FontSize="12"/>
                 <StackPanel Grid.Column="1" Grid.Row="4">
                     <CheckBox>Decimation filter</CheckBox>
-                    <CheckBox>Spatial Filter</CheckBox>
+                    <CheckBox>Spatial filter</CheckBox>
                     <CheckBox IsChecked="True">Temporal filter</CheckBox>
                     <CheckBox>Holes filling filter</CheckBox>
                     <CheckBox IsChecked="True">Threshold filter</CheckBox>
                 </StackPanel>
+
+                <Expander Grid.Row="5" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" Header="View Camera" Foreground="DarkGray" Style="{DynamicResource MaterialDesignExpander}" 
+                          materialDesign:ExpanderAssist.UpHeaderPadding="0" materialDesign:ExpanderAssist.DownHeaderPadding="0" FontSize="5" >
+                    <Canvas x:Name="LiveCamCanvas" HorizontalAlignment="Stretch" Height="150" Background="Blue"/>
+                </Expander>
+
 
             </Grid>
         </Border>

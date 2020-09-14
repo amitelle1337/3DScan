@@ -11,27 +11,22 @@ namespace _3DScan.ViewModel
     class ScanManagerVM
     {
         private ScanManager Model { get; set; }
+        private ScanModel Model1 { get; set; }
 
-        public ScanManagerVM()
+        public ScanManagerVM(ScanModel model)
         {
-
-            //using (StreamReader r = new StreamReader("config.json"))
-            //{
-            //    var jsonString = r.ReadToEnd();
-            //    Model = JsonSerializer.Deserialize<ScanManager>(jsonString);
-            //}
-            Model = new ScanManager(new Intel.RealSense.Context());
+            this.Model1 = model;
 
         }
 
         public void Capture()
         {
-            Model.SavePointCloud(Model.ScanObject(), "xyz");
+            //Model.SavePointCloud(Model.ScanObject(), "xyz");
         }
 
         public void Calibrate()
         {
-            Model.Calibrate();
+            //Model.Calibrate();
         }
     }
 }

@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using _3DScan.ViewModel;
 using _3DScan.View.Controls;
 using _3DScan.View;
+using _3DScan.Model;
 
 namespace _3DScan
 {
@@ -28,8 +29,10 @@ namespace _3DScan
 
         public MainWindow()
         {
-            Application.Current.Properties["CamerasManagerVM"] = new CamerasManagerVM();
-            Application.Current.Properties["ScanManagerVM"] = new ScanManagerVM();
+            var m = new ScanModel();
+            Application.Current.Properties["Model"] = m;
+            Application.Current.Properties["CamerasManagerVM"] = new CamerasManagerVM(m);
+            Application.Current.Properties["ScanManagerVM"] = new ScanManagerVM(m);
             InitializeComponent();
             
             controls = new Dictionary<string, UserControl>();
