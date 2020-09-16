@@ -72,7 +72,7 @@ namespace _3DScan.Model
         {
             get
             {
-                if (_type.HasValue)
+                if (!_type.HasValue)
                 {
                     _type = CameraTypeFunctions.QuarryCameraType(Serial);
                 }

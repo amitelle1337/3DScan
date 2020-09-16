@@ -44,7 +44,6 @@ namespace _3DScan.Model
         {
             if (!_cache.ContainsKey(serial))
             {
-                var found = false;
                 using (var ctx = new Context())
                 {
                     var devices = ctx.QueryDevices();
@@ -54,7 +53,7 @@ namespace _3DScan.Model
                     }
                 }
 
-                if (!found)
+                if (!_cache.ContainsKey(serial))
                 {
                     throw new Exception($"The device with serial number {serial} is not connected");
                 }
