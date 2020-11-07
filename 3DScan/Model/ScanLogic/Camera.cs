@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text.Json.Serialization;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace _3DScan.Model
 {
@@ -29,6 +31,7 @@ namespace _3DScan.Model
                 _serial = value;
                 _type = null;
                 _fov = null;
+                _depthSensor = null;
             }
         }
 
@@ -74,11 +77,27 @@ namespace _3DScan.Model
             {
                 if (!_type.HasValue)
                 {
-                    _type = CameraTypeFunctions.QuarryCameraType(Serial);
+                    _type = RealSenseUtils.QuarryCameraType(Serial);
                 }
                 return _type.Value;
             }
             private set => _type = value;
+        }
+
+        private Sensor _depthSensor;
+
+        [JsonIgnore]
+        public Sensor DepthSensor
+        {
+            get
+            {
+                if (_depthSensor == null)
+                {
+                    _depthSensor = RealSenseUtils.QuerryDepthSensor(Serial);
+                }
+                return _depthSensor;
+            }
+            private set => _depthSensor = value;
         }
 
         /// <value>
@@ -191,7 +210,7 @@ namespace _3DScan.Model
         }
 
         /// <summary>
-        /// Captures a certain number of frames from this <c>Camera</c>.
+        /// Captures a certain number of frames from this <c>Camera</c>, asynchronously.
         /// </summary>
         /// <param name="framesNumber">The number of frames to capture. Default is <c>1</c>.</param>
         /// <param name="dummyFramesNumber">The number of dummy frames to capture.
@@ -200,38 +219,42 @@ namespace _3DScan.Model
         /// <returns>An array of frames, whom have been captured by this <c>Camera</c>. </returns>
         /// <remarks>The caller need to dispose the frames.</remarks>
         /// <seealso cref="CaptureFrame(int, int)"/>
-        public DepthFrame[] CaptureDepthFrames(int framesNumber = 1, int dummyFramesNumber = 30, bool keepFrames = true)
+        public async Task<DepthFrame[]> CaptureDepthFramesAsync(int framesNumber = 1, int dummyFramesNumber = 30, bool keepFrames = true)
         {
-            var config = GetDepthConfig();
-            var pipe = new Pipeline();
 
-            var pp = pipe.Start(config);
-            try
+            var ch = Channel.CreateUnbounded<Frame>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+            var chWriter = ch.Writer;
+
+            var localSensor = DepthSensor; // Make sure were using the same sensor.
+
+            localSensor.Open(localSensor.StreamProfiles.First(sp => sp.Stream == Stream.Depth));
+            localSensor.Start(f => chWriter.WriteAsync(f.Clone()).GetAwaiter().GetResult());
+
+            var chReader = ch.Reader;
+            for (var i = 0; i < dummyFramesNumber; ++i)
             {
-                for (var i = 0; i < dummyFramesNumber; ++i)
-                {
-                    using (var frames = pipe.WaitForFrames())
-                    using (var depth = frames.DepthFrame) ;
-                }
-
-                var framesArr = new DepthFrame[framesNumber];
-
-                for (var i = 0; i < framesNumber; ++i)
-                {
-                    using var frameset = pipe.WaitForFrames();
-                    framesArr[i] = frameset.DepthFrame;
-                    if (keepFrames)
-                    {
-                        framesArr[i].Keep();
-                    }
-                }
-
-                return framesArr;
+                // ConfigureAwait(false) because the context does not matter.
+                var frame = await chReader.ReadAsync().ConfigureAwait(false);
+                frame.Dispose();
             }
-            finally
+
+            var frames = new DepthFrame[framesNumber];
+            for (var i = 0; i < framesNumber; ++i)
             {
-                pipe.Stop();
+                // ConfigureAwait(false) because the context does not matter.
+                var frame = await chReader.ReadAsync().ConfigureAwait(false);
+                if (keepFrames)
+                {
+                    frame.Keep();
+                }
+                frames[i] = frame.As<DepthFrame>();
             }
+
+            localSensor.Stop();
+            localSensor.Close();
+            chWriter.Complete(); // Probably not necessary.
+
+            return frames;
         }
 
         /// <summary>
@@ -284,7 +307,7 @@ namespace _3DScan.Model
 
         /// <summary>
         /// Adjust a point-cloud with this camera's deviations,
-        /// changes to origin point to be relative to the center of the object (rather than relative to the camera)
+        /// changes to origin point to be relative to the center of the object (rather than relative to the camera).
         /// </summary>
         /// <param name="vertices">>A point-cloud to apply this transformation on.</param>
         public void AdjustInPlace(List<Vector3> vertices)
